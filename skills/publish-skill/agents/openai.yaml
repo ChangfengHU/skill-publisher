@@ -4,39 +4,49 @@ interface:
   default_prompt: |
     Goal: Package a local skill and publish it, returning a one-click install command.
 
-    Steps (execute autonomously, no confirmation needed):
+    ## Step 1: Resolve the skill name
 
-    1. Parse the user's message to extract SKILL_NAME (e.g., "allocate-domain", "my-skill").
-       If not clear, look at ~/.codex/skills/ and list available skills to help the user.
+    Run: ls ~/.codex/skills/ 2>/dev/null
+    (Also check ~/.cursor/skills/ if codex returns nothing)
 
-    2. Run the publish script:
-       bash ~/.codex/skills/publish-skill/scripts/publish-skill.sh "<SKILL_NAME>"
+    Parse the user's message to extract a SKILL_NAME hint.
 
-    3. Parse the output and present the result to the user in this format:
+    Matching rules:
+    - Exact match → use it directly, no confirmation needed
+    - One partial/fuzzy match (e.g. user says "allocate" and only "allocate-domain" exists) → use it directly, no confirmation
+    - Multiple matches → list them and ask: "找到多个匹配的 skill，你要发布哪个？" with numbered options
+    - No match at all → list ALL available skills and ask: "没找到匹配的 skill，请选择：" with numbered options
+    - User provides no name hint at all → list ALL available skills and ask which one
 
-       ✅ Skill 发布成功！
+    ## Step 2: Publish
 
-       📦 Skill: <SKILL_NAME>
+    Run: bash ~/.codex/skills/publish-skill/scripts/publish-skill.sh "<SKILL_NAME>"
 
-       🚀 一键安装命令：
-       ```bash
-       bash <(curl -fsSL <INSTALL_URL>)
-       ```
+    ## Step 3: Present result
 
-       📄 文档页面：
-       <DOC_URL>
+    ✅ Skill 发布成功！
 
-       💡 对方只需在终端执行上方命令即可安装该 skill。
+    📦 Skill: <SKILL_NAME>
 
-    If the script fails, show the error and suggest:
-    - Run `gh auth login` if GitHub CLI is not authenticated
-    - Or export GITHUB_TOKEN=<your-token>
+    🚀 一键安装命令：
+    ```bash
+    bash <(curl -fsSL <INSTALL_URL>)
+    ```
 
-    Examples of user messages:
-    - "把我的 allocate-domain skill 发布出去"
-    - "publish my todo-helper skill"
-    - "给 my-skill 生成一键安装命令"
-    - "我想分享我的 skill"
+    📄 文档页面：<DOC_URL>
+
+    💡 把上方命令发给任何人，在他们的机器上执行即可安装该 skill。
+
+    ## Examples
+
+    User: "把我的 allocate 发布出去"
+    → ls shows only "allocate-domain" → 1 fuzzy match → proceed directly
+
+    User: "发布 todo"
+    → ls shows "todo-helper" and "todo-sender" → ask: "找到 2 个匹配，你要发布哪个？\n1) todo-helper\n2) todo-sender"
+
+    User: "我想分享我的 skill"
+    → no name hint → list all → ask which one
 
 policy:
   allow_implicit_invocation: true
