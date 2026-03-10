@@ -59,7 +59,8 @@ echo ""
 TMPDIR_WORK=$(mktemp -d /tmp/publish-skill-XXXXXX)
 trap 'rm -rf "$TMPDIR_WORK"' EXIT
 
-ZIP_FILENAME="${SKILL_NAME}.zip"
+TS=$(date +%Y%m%d%H%M%S)
+ZIP_FILENAME="${SKILL_NAME}-${TS}.zip"
 ZIP_PATH="${TMPDIR_WORK}/${ZIP_FILENAME}"
 
 # ── 打 zip（保留目录结构，zip 解压后得到 <skill-name>/ 目录）──
