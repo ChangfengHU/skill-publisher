@@ -149,8 +149,18 @@ trap 'rm -rf "\$TMPWORK"' EXIT
 echo "   下载 \${ZIP_URL} ..."
 curl -fsSL "\${ZIP_URL}" -o "\${TMPWORK}/skill.zip"
 
-# ── 解压到临时目录 ────────────────────────────────────────
-unzip -q "\${TMPWORK}/skill.zip" -d "\${TMPWORK}/extracted"
+# ── 解压到临时目录（优先 unzip，回退到 python3）────────────
+mkdir -p "\${TMPWORK}/extracted"
+if command -v unzip &>/dev/null; then
+  unzip -q "\${TMPWORK}/skill.zip" -d "\${TMPWORK}/extracted"
+elif command -v python3 &>/dev/null; then
+  python3 -m zipfile -e "\${TMPWORK}/skill.zip" "\${TMPWORK}/extracted"
+elif command -v python &>/dev/null; then
+  python -m zipfile -e "\${TMPWORK}/skill.zip" "\${TMPWORK}/extracted"
+else
+  echo "❌ 需要 unzip 或 python3 来解压，请先安装其中一个" >&2
+  exit 1
+fi
 
 # 解压后的目录就是 <skill-name>/
 EXTRACTED_DIR="\${TMPWORK}/extracted/\${SKILL_NAME}"
