@@ -21,7 +21,7 @@ if [[ -z "$SKILL_NAME" ]]; then
   for d in \
     "${HOME}/.codex/skills" \
     "${HOME}/.cursor/skills" \
-    "${HOME}/.github-copilot/skills" \
+    "${HOME}/.copilot/skills" \
     "${HOME}/.gemini/skills"; do
     [[ -d "$d" ]] && ls "$d" 2>/dev/null | grep -v '^\.' | sed "s|^|  [$d] |"
   done
@@ -34,7 +34,7 @@ if [[ -z "$SKILL_DIR" ]]; then
   for candidate in \
     "${HOME}/.codex/skills/${SKILL_NAME}" \
     "${HOME}/.cursor/skills/${SKILL_NAME}" \
-    "${HOME}/.github-copilot/skills/${SKILL_NAME}" \
+    "${HOME}/.copilot/skills/${SKILL_NAME}" \
     "${HOME}/.gemini/skills/${SKILL_NAME}" \
     "${HOME}/.claude/plugins/${SKILL_NAME}/skills/${SKILL_NAME}" \
     "$(pwd)/skills/${SKILL_NAME}" \
@@ -48,7 +48,7 @@ fi
 
 if [[ -z "$SKILL_DIR" || ! -d "$SKILL_DIR" ]]; then
   echo "❌ 找不到 skill 目录: ${SKILL_NAME}" >&2
-  echo "搜索路径: ~/.codex/skills/ ~/.cursor/skills/ ~/.github-copilot/skills/ 等" >&2
+  echo "搜索路径: ~/.codex/skills/ ~/.cursor/skills/ ~/.copilot/skills/ 等" >&2
   exit 1
 fi
 
@@ -104,7 +104,7 @@ if [[ -z "\$TARGET" ]]; then
   echo "  3) Claude       (~/.claude/plugins/)"
   echo "  4) Gemini       (~/.gemini/skills/)"
   echo "  5) Antigravity  (~/.gemini/antigravity/knowledge/)"
-  echo "  6) Copilot      (~/.github-copilot/skills/)"
+  echo "  6) Copilot      (~/.copilot/skills/)"
   echo "  7) 全部安装"
   read -rp "请输入编号 [1-7]: " CHOICE
   case "\$CHOICE" in
@@ -125,7 +125,7 @@ case "\$TARGET" in
   claude)      DIRS=("\$HOME/.claude/plugins/\${SKILL_NAME}/skills")  ;;
   gemini)      DIRS=("\$HOME/.gemini/skills")                         ;;
   antigravity) DIRS=("\$HOME/.gemini/antigravity/knowledge")          ;;
-  copilot)     DIRS=("\$HOME/.github-copilot/skills")                 ;;
+  copilot)     DIRS=("\$HOME/.copilot/skills")                 ;;
   all)
     DIRS=(
       "\$HOME/.codex/skills"
@@ -133,7 +133,7 @@ case "\$TARGET" in
       "\$HOME/.claude/plugins/\${SKILL_NAME}/skills"
       "\$HOME/.gemini/skills"
       "\$HOME/.gemini/antigravity/knowledge"
-      "\$HOME/.github-copilot/skills"
+      "\$HOME/.copilot/skills"
     ) ;;
   *) echo "❌ 不支持的 target: \$TARGET"; exit 1 ;;
 esac

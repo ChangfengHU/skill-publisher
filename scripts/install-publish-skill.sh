@@ -25,7 +25,7 @@ if [[ -z "$TARGET" ]]; then
   echo "  3) Claude       (~/.claude/plugins/)"
   echo "  4) Gemini       (~/.gemini/skills/)"
   echo "  5) Antigravity  (~/.gemini/antigravity/knowledge/)"
-  echo "  6) Copilot      (~/.github-copilot/skills/)"
+  echo "  6) Copilot      (~/.copilot/skills/)"
   echo "  7) 全部安装"
   echo ""
   read -rp "请输入编号 [1-7]: " CHOICE
@@ -49,7 +49,7 @@ skill_dir() {
     claude)      echo "$HOME/.claude/plugins/$SKILL_NAME/skills/$SKILL_NAME" ;;
     gemini)      echo "$HOME/.gemini/skills/$SKILL_NAME" ;;
     antigravity) echo "$HOME/.gemini/antigravity/knowledge/$SKILL_NAME" ;;
-    copilot)     echo "$HOME/.github-copilot/skills/$SKILL_NAME" ;;
+    copilot)     echo "$HOME/.copilot/skills/$SKILL_NAME" ;;
   esac
 }
 
@@ -88,7 +88,7 @@ interface:
       "$HOME/.claude/plugins/publish-skill/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.gemini/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.gemini/antigravity/knowledge/publish-skill/scripts/publish-skill.sh" \
-      "$HOME/.github-copilot/skills/publish-skill/scripts/publish-skill.sh"; do
+      "$HOME/.copilot/skills/publish-skill/scripts/publish-skill.sh"; do
       [ -f "$p" ] && SCRIPT="$p" && break
     done
     ```

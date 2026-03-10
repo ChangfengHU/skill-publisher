@@ -60,4 +60,4 @@ DOCS_API_URL=http://165.154.134.82:1002  # 文档页面服务
 | Claude | `~/.claude/plugins/` |
 | Gemini | `~/.gemini/skills/` |
 | Antigravity | `~/.gemini/antigravity/knowledge/` |
-| Copilot | `~/.github-copilot/skills/` |
+| Copilot | `~/.copilot/skills/` |
