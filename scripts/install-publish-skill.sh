@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 一键安装 publish-skill 到本机
-# 用法: bash <(curl -fsSL https://images-uii41p.vyibc.com/install-publish-skill.sh)
+# 用法: bash <(curl -fsSL https://skills.vyibc.com/install-publish-skill.sh)
 #       bash <(curl -fsSL ...) --target codex|cursor|claude|gemini|antigravity|copilot|all
 
 set -euo pipefail
@@ -127,7 +127,7 @@ policy:
 AGENT_EOF
 
   # scripts/publish-skill.sh — 从文件服务器拉取
-  curl -fsSL "https://images-uii41p.vyibc.com/publish-skill-core.sh" \
+  curl -fsSL "https://skills.vyibc.com/publish-skill-core.sh" \
     -o "$dir/scripts/publish-skill.sh" 2>/dev/null \
     || { echo "  ⚠️  从文件服务器拉取失败"; exit 1; }
   chmod +x "$dir/scripts/publish-skill.sh"

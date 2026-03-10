@@ -37,7 +37,7 @@ publish my todo-helper skill
 bash <(curl -fsSL https://gist.githubusercontent.com/xxx/yyy/raw/install-allocate-domain.sh)
 
 📄 文档页面（可分享给他人查看）：
-https://images-uii41p.vyibc.com/abc123.html
+https://skills.vyibc.com/abc123.html
 
 💡 使用方式：
   复制上方命令，在任意机器上执行即可安装该 skill
