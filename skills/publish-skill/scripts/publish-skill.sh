@@ -23,7 +23,11 @@ if [[ -z "$SKILL_NAME" ]]; then
     "${HOME}/.codex/skills" \
     "${HOME}/.cursor/skills" \
     "${HOME}/.copilot/skills" \
-    "${HOME}/.gemini/skills"; do
+    "${HOME}/.gemini/skills" \
+    "${HOME}/.gemini/antigravity/skills" \
+    "${HOME}/.claude/plugins" \
+    "${HOME}/.openclaw/workspace/skills" \
+    "${HOME}/.agents/skills"; do
     [[ -d "$d" ]] && ls "$d" 2>/dev/null | grep -v '^\.' | sed "s|^|  [$d] |"
   done
   exit 1
@@ -37,9 +41,10 @@ if [[ -z "$SKILL_DIR" ]]; then
     "${HOME}/.cursor/skills/${SKILL_NAME}" \
     "${HOME}/.copilot/skills/${SKILL_NAME}" \
     "${HOME}/.gemini/skills/${SKILL_NAME}" \
+    "${HOME}/.gemini/antigravity/skills/${SKILL_NAME}" \
     "${HOME}/.claude/plugins/${SKILL_NAME}/skills/${SKILL_NAME}" \
-    "$(pwd)/skills/${SKILL_NAME}" \
-    "$(pwd)/${SKILL_NAME}"; do
+    "${HOME}/.openclaw/workspace/skills/${SKILL_NAME}" \
+    "${HOME}/.agents/skills/${SKILL_NAME}"; do
     if [[ -d "$candidate" ]]; then
       SKILL_DIR="$candidate"
       break
@@ -49,7 +54,7 @@ fi
 
 if [[ -z "$SKILL_DIR" || ! -d "$SKILL_DIR" ]]; then
   echo "❌ 找不到 skill 目录: ${SKILL_NAME}" >&2
-  echo "搜索路径: ~/.codex/skills/ ~/.cursor/skills/ ~/.copilot/skills/ 等" >&2
+  echo "搜索路径: ~/.codex/skills/, ~/.cursor/skills/, ~/.copilot/skills/, ~/.gemini/skills/, ~/.gemini/antigravity/skills/, ~/.claude/plugins/, ~/.openclaw/workspace/skills/, ~/.agents/skills/" >&2
   exit 1
 fi
 
@@ -107,7 +112,7 @@ if [[ -z "\$TARGET" ]]; then
   echo "  2) Cursor       (~/.cursor/skills/)"
   echo "  3) Claude       (~/.claude/plugins/)"
   echo "  4) Gemini       (~/.gemini/skills/)"
-  echo "  5) Antigravity  (~/.gemini/antigravity/knowledge/)"
+  echo "  5) Antigravity  (~/.gemini/antigravity/skills/)"
   echo "  6) Copilot      (~/.copilot/skills/)"
   echo "  7) 全部安装"
   read -rp "请输入编号 [1-7]: " CHOICE
@@ -128,7 +133,7 @@ case "\$TARGET" in
   cursor)      DIRS=("\$HOME/.cursor/skills")                         ;;
   claude)      DIRS=("\$HOME/.claude/plugins/\${SKILL_NAME}/skills")  ;;
   gemini)      DIRS=("\$HOME/.gemini/skills")                         ;;
-  antigravity) DIRS=("\$HOME/.gemini/antigravity/knowledge")          ;;
+  antigravity) DIRS=("\$HOME/.gemini/antigravity/skills")             ;;
   copilot)     DIRS=("\$HOME/.copilot/skills")                 ;;
   all)
     DIRS=(
@@ -136,7 +141,7 @@ case "\$TARGET" in
       "\$HOME/.cursor/skills"
       "\$HOME/.claude/plugins/\${SKILL_NAME}/skills"
       "\$HOME/.gemini/skills"
-      "\$HOME/.gemini/antigravity/knowledge"
+      "\$HOME/.gemini/antigravity/skills"
       "\$HOME/.copilot/skills"
     ) ;;
   *) echo "❌ 不支持的 target: \$TARGET"; exit 1 ;;

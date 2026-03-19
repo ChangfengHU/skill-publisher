@@ -24,7 +24,7 @@ if [[ -z "$TARGET" ]]; then
   echo "  2) Cursor       (~/.cursor/skills/)"
   echo "  3) Claude       (~/.claude/plugins/)"
   echo "  4) Gemini       (~/.gemini/skills/)"
-  echo "  5) Antigravity  (~/.gemini/antigravity/knowledge/)"
+  echo "  5) Antigravity  (~/.gemini/antigravity/skills/)"
   echo "  6) Copilot      (~/.copilot/skills/)"
   echo "  7) 全部安装"
   echo ""
@@ -48,7 +48,7 @@ skill_dir() {
     cursor)      echo "$HOME/.cursor/skills/$SKILL_NAME" ;;
     claude)      echo "$HOME/.claude/plugins/$SKILL_NAME/skills/$SKILL_NAME" ;;
     gemini)      echo "$HOME/.gemini/skills/$SKILL_NAME" ;;
-    antigravity) echo "$HOME/.gemini/antigravity/knowledge/$SKILL_NAME" ;;
+    antigravity) echo "$HOME/.gemini/antigravity/skills/$SKILL_NAME" ;;
     copilot)     echo "$HOME/.copilot/skills/$SKILL_NAME" ;;
   esac
 }
@@ -87,7 +87,7 @@ interface:
       "$HOME/.cursor/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.claude/plugins/publish-skill/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.gemini/skills/publish-skill/scripts/publish-skill.sh" \
-      "$HOME/.gemini/antigravity/knowledge/publish-skill/scripts/publish-skill.sh" \
+      "$HOME/.gemini/antigravity/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.copilot/skills/publish-skill/scripts/publish-skill.sh"; do
       [ -f "$p" ] && SCRIPT="$p" && break
     done
@@ -95,7 +95,8 @@ interface:
 
     ## Step 2: Resolve the skill name
 
-    Run: ls ~/.codex/skills/ ~/.cursor/skills/ 2>/dev/null | sort -u
+    Run: ls ~/.codex/skills/ ~/.cursor/skills/ ~/.copilot/skills/ ~/.gemini/skills/ ~/.gemini/antigravity/skills/ ~/.claude/plugins/ ~/.openclaw/workspace/skills/ ~/.agents/skills/ 2>/dev/null | sort -u
+    (Only check these specific directories. DO NOT package the current working directory unless it is inside one of these paths.)
 
     Matching rules:
     - Exact match → proceed directly
