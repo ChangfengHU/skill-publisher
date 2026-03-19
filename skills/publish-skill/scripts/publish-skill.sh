@@ -114,8 +114,10 @@ if [[ -z "\$TARGET" ]]; then
   echo "  4) Gemini       (~/.gemini/skills/)"
   echo "  5) Antigravity  (~/.gemini/antigravity/skills/)"
   echo "  6) Copilot      (~/.copilot/skills/)"
-  echo "  7) 全部安装"
-  read -rp "请输入编号 [1-7]: " CHOICE
+  echo "  7) OpenClaw     (~/.openclaw/workspace/skills/)"
+  echo "  8) Agents       (~/.agents/skills/)"
+  echo "  9) 全部安装"
+  read -rp "请输入编号 [1-9]: " CHOICE
   case "\$CHOICE" in
     1) TARGET="codex"       ;;
     2) TARGET="cursor"      ;;
@@ -123,7 +125,9 @@ if [[ -z "\$TARGET" ]]; then
     4) TARGET="gemini"      ;;
     5) TARGET="antigravity" ;;
     6) TARGET="copilot"     ;;
-    7) TARGET="all"         ;;
+    7) TARGET="openclaw"    ;;
+    8) TARGET="agents"      ;;
+    9) TARGET="all"         ;;
     *) echo "❌ 无效选项"; exit 1 ;;
   esac
 fi
@@ -135,6 +139,8 @@ case "\$TARGET" in
   gemini)      DIRS=("\$HOME/.gemini/skills")                         ;;
   antigravity) DIRS=("\$HOME/.gemini/antigravity/skills")             ;;
   copilot)     DIRS=("\$HOME/.copilot/skills")                 ;;
+  openclaw)    DIRS=("\$HOME/.openclaw/workspace/skills")      ;;
+  agents)      DIRS=("\$HOME/.agents/skills")                  ;;
   all)
     DIRS=(
       "\$HOME/.codex/skills"
@@ -143,6 +149,8 @@ case "\$TARGET" in
       "\$HOME/.gemini/skills"
       "\$HOME/.gemini/antigravity/skills"
       "\$HOME/.copilot/skills"
+      "\$HOME/.openclaw/workspace/skills"
+      "\$HOME/.agents/skills"
     ) ;;
   *) echo "❌ 不支持的 target: \$TARGET"; exit 1 ;;
 esac

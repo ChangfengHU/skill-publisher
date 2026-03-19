@@ -26,9 +26,11 @@ if [[ -z "$TARGET" ]]; then
   echo "  4) Gemini       (~/.gemini/skills/)"
   echo "  5) Antigravity  (~/.gemini/antigravity/skills/)"
   echo "  6) Copilot      (~/.copilot/skills/)"
-  echo "  7) 全部安装"
+  echo "  7) OpenClaw     (~/.openclaw/workspace/skills/)"
+  echo "  8) Agents       (~/.agents/skills/)"
+  echo "  9) 全部安装"
   echo ""
-  read -rp "请输入编号 [1-7]: " CHOICE
+  read -rp "请输入编号 [1-9]: " CHOICE
   case "$CHOICE" in
     1) TARGET="codex"       ;;
     2) TARGET="cursor"      ;;
@@ -36,7 +38,9 @@ if [[ -z "$TARGET" ]]; then
     4) TARGET="gemini"      ;;
     5) TARGET="antigravity" ;;
     6) TARGET="copilot"     ;;
-    7) TARGET="all"         ;;
+    7) TARGET="openclaw"    ;;
+    8) TARGET="agents"      ;;
+    9) TARGET="all"         ;;
     *) echo "❌ 无效选项"; exit 1 ;;
   esac
 fi
@@ -50,6 +54,8 @@ skill_dir() {
     gemini)      echo "$HOME/.gemini/skills/$SKILL_NAME" ;;
     antigravity) echo "$HOME/.gemini/antigravity/skills/$SKILL_NAME" ;;
     copilot)     echo "$HOME/.copilot/skills/$SKILL_NAME" ;;
+    openclaw)    echo "$HOME/.openclaw/workspace/skills/$SKILL_NAME" ;;
+    agents)      echo "$HOME/.agents/skills/$SKILL_NAME" ;;
   esac
 }
 
@@ -88,7 +94,9 @@ interface:
       "$HOME/.claude/plugins/publish-skill/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.gemini/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.gemini/antigravity/skills/publish-skill/scripts/publish-skill.sh" \
-      "$HOME/.copilot/skills/publish-skill/scripts/publish-skill.sh"; do
+      "$HOME/.copilot/skills/publish-skill/scripts/publish-skill.sh" \
+      "$HOME/.openclaw/workspace/skills/publish-skill/scripts/publish-skill.sh" \
+      "$HOME/.agents/skills/publish-skill/scripts/publish-skill.sh"; do
       [ -f "$p" ] && SCRIPT="$p" && break
     done
     ```
@@ -142,7 +150,7 @@ echo "🚀 安装 publish-skill → $TARGET"
 echo ""
 
 if [[ "$TARGET" == "all" ]]; then
-  for t in codex cursor claude gemini antigravity copilot; do
+  for t in codex cursor claude gemini antigravity copilot openclaw agents; do
     install_to "$t"
   done
 else
