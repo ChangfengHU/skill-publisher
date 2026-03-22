@@ -13,6 +13,35 @@ set -euo pipefail
 SKILL_NAME="${1:-}"
 FILE_API_URL="${FILE_API_URL:-http://165.154.134.82:1002}"
 CDN_URL="${CDN_URL:-https://skills.vyibc.com}"
+ALLOW_EXTERNAL_SKILL_DIR="${ALLOW_EXTERNAL_SKILL_DIR:-0}"
+
+resolve_abs_path() {
+  local path="$1"
+  [[ -d "$path" ]] || return 1
+  (cd "$path" && pwd -P)
+}
+
+is_allowed_skill_dir() {
+  local dir_abs="$1"
+  local candidate
+
+  for candidate in \
+    "${HOME}/.codex/skills/${SKILL_NAME}" \
+    "${HOME}/.cursor/skills/${SKILL_NAME}" \
+    "${HOME}/.copilot/skills/${SKILL_NAME}" \
+    "${HOME}/.gemini/skills/${SKILL_NAME}" \
+    "${HOME}/.gemini/antigravity/skills/${SKILL_NAME}" \
+    "${HOME}/.claude/skills/${SKILL_NAME}" \
+    "${HOME}/.openclaw/workspace/skills/${SKILL_NAME}" \
+    "${HOME}/.agents/skills/${SKILL_NAME}"; do
+    [[ -d "$candidate" ]] || continue
+    if [[ "$dir_abs" == "$(resolve_abs_path "$candidate")" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
 
 # ── 参数检查 ──────────────────────────────────────────────
 if [[ -z "$SKILL_NAME" ]]; then
@@ -25,7 +54,7 @@ if [[ -z "$SKILL_NAME" ]]; then
     "${HOME}/.copilot/skills" \
     "${HOME}/.gemini/skills" \
     "${HOME}/.gemini/antigravity/skills" \
-    "${HOME}/.claude/plugins" \
+    "${HOME}/.claude/skills" \
     "${HOME}/.openclaw/workspace/skills" \
     "${HOME}/.agents/skills"; do
     [[ -d "$d" ]] && ls "$d" 2>/dev/null | grep -v '^\.' | sed "s|^|  [$d] |"
@@ -42,7 +71,7 @@ if [[ -z "$SKILL_DIR" ]]; then
     "${HOME}/.copilot/skills/${SKILL_NAME}" \
     "${HOME}/.gemini/skills/${SKILL_NAME}" \
     "${HOME}/.gemini/antigravity/skills/${SKILL_NAME}" \
-    "${HOME}/.claude/plugins/${SKILL_NAME}/skills/${SKILL_NAME}" \
+    "${HOME}/.claude/skills/${SKILL_NAME}" \
     "${HOME}/.openclaw/workspace/skills/${SKILL_NAME}" \
     "${HOME}/.agents/skills/${SKILL_NAME}"; do
     if [[ -d "$candidate" ]]; then
@@ -52,10 +81,34 @@ if [[ -z "$SKILL_DIR" ]]; then
   done
 fi
 
+if [[ -n "$SKILL_DIR" && -d "$SKILL_DIR" ]]; then
+  SKILL_DIR="$(resolve_abs_path "$SKILL_DIR")"
+fi
+
 if [[ -z "$SKILL_DIR" || ! -d "$SKILL_DIR" ]]; then
   echo "❌ 找不到 skill 目录: ${SKILL_NAME}" >&2
-  echo "搜索路径: ~/.codex/skills/, ~/.cursor/skills/, ~/.copilot/skills/, ~/.gemini/skills/, ~/.gemini/antigravity/skills/, ~/.claude/plugins/, ~/.openclaw/workspace/skills/, ~/.agents/skills/" >&2
+  echo "搜索路径: ~/.codex/skills/, ~/.cursor/skills/, ~/.copilot/skills/, ~/.gemini/skills/, ~/.gemini/antigravity/skills/, ~/.claude/skills/, ~/.openclaw/workspace/skills/, ~/.agents/skills/" >&2
   exit 1
+fi
+
+if ! is_allowed_skill_dir "$SKILL_DIR"; then
+  if [[ "$ALLOW_EXTERNAL_SKILL_DIR" != "1" ]]; then
+    echo "❌ skill 目录不在允许范围内: ${SKILL_DIR}" >&2
+    echo "默认只允许发布以下路径中的 ${SKILL_NAME}:" >&2
+    echo "  ~/.codex/skills/${SKILL_NAME}" >&2
+    echo "  ~/.cursor/skills/${SKILL_NAME}" >&2
+    echo "  ~/.copilot/skills/${SKILL_NAME}" >&2
+    echo "  ~/.gemini/skills/${SKILL_NAME}" >&2
+    echo "  ~/.gemini/antigravity/skills/${SKILL_NAME}" >&2
+    echo "  ~/.claude/skills/${SKILL_NAME}" >&2
+    echo "  ~/.openclaw/workspace/skills/${SKILL_NAME}" >&2
+    echo "  ~/.agents/skills/${SKILL_NAME}" >&2
+    echo "" >&2
+    echo "如需从仓库目录等外部路径发布，请显式开启覆盖：" >&2
+    echo "  ALLOW_EXTERNAL_SKILL_DIR=1 $0 ${SKILL_NAME} ${SKILL_DIR}" >&2
+    exit 1
+  fi
+  echo "⚠️  使用外部 skill 目录发布: ${SKILL_DIR}" >&2
 fi
 
 echo "📦 打包 skill: ${SKILL_NAME}"
@@ -110,7 +163,7 @@ if [[ -z "\$TARGET" ]]; then
   echo "🛠  选择安装 \${SKILL_NAME} 到哪个 AI 工具："
   echo "  1) Codex        (~/.codex/skills/)"
   echo "  2) Cursor       (~/.cursor/skills/)"
-  echo "  3) Claude       (~/.claude/plugins/)"
+  echo "  3) Claude       (~/.claude/skills/)"
   echo "  4) Gemini       (~/.gemini/skills/)"
   echo "  5) Antigravity  (~/.gemini/antigravity/skills/)"
   echo "  6) Copilot      (~/.copilot/skills/)"
@@ -135,7 +188,7 @@ fi
 case "\$TARGET" in
   codex)       DIRS=("\$HOME/.codex/skills")                          ;;
   cursor)      DIRS=("\$HOME/.cursor/skills")                         ;;
-  claude)      DIRS=("\$HOME/.claude/plugins/\${SKILL_NAME}/skills")  ;;
+  claude)      DIRS=("\$HOME/.claude/skills")  ;;
   gemini)      DIRS=("\$HOME/.gemini/skills")                         ;;
   antigravity) DIRS=("\$HOME/.gemini/antigravity/skills")             ;;
   copilot)     DIRS=("\$HOME/.copilot/skills")                 ;;
@@ -145,7 +198,7 @@ case "\$TARGET" in
     DIRS=(
       "\$HOME/.codex/skills"
       "\$HOME/.cursor/skills"
-      "\$HOME/.claude/plugins/\${SKILL_NAME}/skills"
+      "\$HOME/.claude/skills"
       "\$HOME/.gemini/skills"
       "\$HOME/.gemini/antigravity/skills"
       "\$HOME/.copilot/skills"

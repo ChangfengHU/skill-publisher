@@ -6,7 +6,7 @@ interface:
 
     ## Step 1: Resolve the skill name
 
-    Run: ls ~/.codex/skills/ ~/.cursor/skills/ ~/.copilot/skills/ ~/.gemini/skills/ ~/.gemini/antigravity/skills/ ~/.claude/plugins/ ~/.openclaw/workspace/skills/ ~/.agents/skills/ 2>/dev/null
+    Run: ls ~/.codex/skills/ ~/.cursor/skills/ ~/.copilot/skills/ ~/.gemini/skills/ ~/.gemini/antigravity/skills/ ~/.claude/skills/ ~/.openclaw/workspace/skills/ ~/.agents/skills/ 2>/dev/null
     (Only check these specific directories. DO NOT package the current working directory unless it is inside one of these paths.)
 
     Parse the user's message to extract a SKILL_NAME hint.

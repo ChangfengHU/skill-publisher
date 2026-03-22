@@ -54,7 +54,7 @@ bash <(curl -fsSL https://skills.vyibc.com/install-my-skill.sh)
 |---|------|---------|
 | 1 | Codex | `~/.codex/skills/<name>/` |
 | 2 | Cursor | `~/.cursor/skills/<name>/` |
-| 3 | Claude | `~/.claude/plugins/<name>/skills/<name>/` |
+| 3 | Claude | `~/.claude/skills/<name>/` |
 | 4 | Gemini | `~/.gemini/skills/<name>/` |
 | 5 | Antigravity | `~/.gemini/antigravity/knowledge/<name>/` |
 | 6 | Copilot | `~/.copilot/skills/<name>/` |
@@ -70,8 +70,11 @@ bash <(curl -fsSL https://skills.vyibc.com/install-my-skill.sh)
 # 发布指定 skill（自动在常见路径下查找）
 bash ~/.codex/skills/publish-skill/scripts/publish-skill.sh <skill-name>
 
-# 指定 skill 目录
+# 指定 skill 目录（仅允许 8 个受支持工具目录内的路径）
 bash ~/.codex/skills/publish-skill/scripts/publish-skill.sh <skill-name> /path/to/skill
+
+# 如果确实要从仓库目录等外部路径发布，需要显式开启覆盖
+ALLOW_EXTERNAL_SKILL_DIR=1 bash ~/.codex/skills/publish-skill/scripts/publish-skill.sh <skill-name> /path/to/skill
 
 # 自定义文件服务器
 FILE_API_URL=http://your-server:1002 bash publish-skill.sh <skill-name>

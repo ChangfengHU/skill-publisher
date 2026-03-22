@@ -34,7 +34,7 @@ publish my todo-helper skill
 📦 Skill: allocate-domain
 
 🚀 一键安装命令：
-bash <(curl -fsSL https://gist.githubusercontent.com/xxx/yyy/raw/install-allocate-domain.sh)
+bash <(curl -fsSL https://skills.vyibc.com/install-allocate-domain.sh)
 
 📄 文档页面（可分享给他人查看）：
 https://skills.vyibc.com/abc123.html
@@ -49,15 +49,21 @@ https://skills.vyibc.com/abc123.html
 用户说：把我的 my-skill 发布出去
          ↓
 1. 找到本地 skill 目录（~/.codex/skills/my-skill/）
-2. 读取所有 skill 文件
-3. 生成自包含安装脚本（内嵌所有文件内容）
-4. 上传到 GitHub Gist → 获得 raw URL
-5. 上传到 documents:toPage → 获得 HTML 文档 URL
-6. 返回 bash <(curl -fsSL <raw-url>) 命令
+2. 打包成 zip 文件并上传到 skills.vyibc.com
+3. 生成安装脚本（下载 zip -> 解压 -> 安装到目标工具）并上传
+4. 调用 documents:toPage 生成可分享的文档页
+5. 返回 bash <(curl -fsSL https://skills.vyibc.com/install-my-skill.sh) 命令
 ```
 
 ## 环境要求
 
-- `gh` CLI（GitHub CLI）或 `GITHUB_TOKEN` 环境变量
+- `zip`
+- `python3`
 - `curl`
 - 网络连接
+
+## 路径限制
+
+- 默认只会从受支持工具的 skill 目录中查找和发布
+- 如果手动传入第二个参数，路径也必须落在这些目录内
+- 只有显式设置 `ALLOW_EXTERNAL_SKILL_DIR=1` 时，才允许从仓库目录等外部路径发布
