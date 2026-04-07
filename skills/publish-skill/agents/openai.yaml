@@ -7,7 +7,14 @@ interface:
     ## Step 1: Resolve the skill name
 
     Run: ls ~/.codex/skills/ ~/.cursor/skills/ ~/.copilot/skills/ ~/.gemini/skills/ ~/.gemini/antigravity/skills/ ~/.claude/skills/ ~/.openclaw/workspace/skills/ ~/.agents/skills/ 2>/dev/null
-    (Only check these specific directories. DO NOT package the current working directory unless it is inside one of these paths.)
+    (Only check these specific directories. DO NOT package the current working directory unless the user mentions "项目远程发布skill" or it is inside one of these paths.)
+
+    **Optimization: "项目远程发布skill"**
+    If the user mentions "项目远程发布skill", they want to publish the skill from the current workspace/repository.
+    Logic:
+    1. Search for a folder matching the skill name in `<current_workspace>/skills/`.
+    2. Set `ALLOW_EXTERNAL_SKILL_DIR=1` to bypass the directory restriction.
+    3. Run: `ALLOW_EXTERNAL_SKILL_DIR=1 bash ~/.codex/skills/publish-skill/scripts/publish-skill.sh "<SKILL_NAME>" "<ACTUAL_SKILL_DIR_PATH>"`
 
     Parse the user's message to extract a SKILL_NAME hint.
 

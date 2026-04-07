@@ -2,7 +2,7 @@
 name: publish-skill
 description: >
   当用户说"我想分享我的 skill"、"给我的 skill 生成安装脚本"、"publish skill"、
-  "generate install command for my skill"、"把我的 skill 发布出去" 时自动触发。
+  "generate install command for my skill"、"把我的 skill 发布出去"、"项目远程发布skill" 时自动触发。
   一句话为本地任意 skill 生成一键安装命令，对方机器只需执行一行 bash 命令即可安装。
 ---
 
@@ -67,3 +67,4 @@ https://skills.vyibc.com/abc123.html
 - 默认只会从受支持工具的 skill 目录中查找和发布
 - 如果手动传入第二个参数，路径也必须落在这些目录内
 - 只有显式设置 `ALLOW_EXTERNAL_SKILL_DIR=1` 时，才允许从仓库目录等外部路径发布
+- **特殊优化**：当用户明确提到“项目远程发布skill”时，通常是指发布当前项目（仓库）中的某个 skill。此时应当自动设置 `ALLOW_EXTERNAL_SKILL_DIR=1`，并根据用户提到的 skill 名称在当前项目的 `skills/` 目录下查找路径。
