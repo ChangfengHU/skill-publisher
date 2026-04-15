@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SKILL_NAME="${1:-}"
-FILE_API_URL="${FILE_API_URL:-http://165.154.134.82:1002}"
+FILE_API_URL="${FILE_API_URL:-https://upload.vyibc.com}"
 CDN_URL="${CDN_URL:-https://skills.vyibc.com}"
 ALLOW_EXTERNAL_SKILL_DIR="${ALLOW_EXTERNAL_SKILL_DIR:-0}"
 

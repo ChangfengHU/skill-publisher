@@ -4,7 +4,7 @@
 #       bash <(curl -fsSL ...) --target codex|cursor|claude|gemini|antigravity|copilot|all
 
 set -euo pipefail
-FILE_API="http://165.154.134.82:1002"
+FILE_API="https://upload.vyibc.com"
 SKILL_NAME="publish-skill"
 TARGET=""
 
