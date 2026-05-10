@@ -169,8 +169,9 @@ if [[ -z "\$TARGET" ]]; then
   echo "  6) Copilot      (~/.copilot/skills/)"
   echo "  7) OpenClaw     (~/.openclaw/workspace/skills/)"
   echo "  8) Agents       (~/.agents/skills/)"
-  echo "  9) 全部安装"
-  read -rp "请输入编号 [1-9]: " CHOICE
+  echo "  9) Hermes       (~/.hermes/skills/devops/)"
+  echo " 10) 全部安装"
+  read -rp "请输入编号 [1-10]: " CHOICE
   case "\$CHOICE" in
     1) TARGET="codex"       ;;
     2) TARGET="cursor"      ;;
@@ -180,7 +181,8 @@ if [[ -z "\$TARGET" ]]; then
     6) TARGET="copilot"     ;;
     7) TARGET="openclaw"    ;;
     8) TARGET="agents"      ;;
-    9) TARGET="all"         ;;
+    9) TARGET="hermes"      ;;
+   10) TARGET="all"         ;;
     *) echo "❌ 无效选项"; exit 1 ;;
   esac
 fi
@@ -194,6 +196,7 @@ case "\$TARGET" in
   copilot)     DIRS=("\$HOME/.copilot/skills")                 ;;
   openclaw)    DIRS=("\$HOME/.openclaw/workspace/skills")      ;;
   agents)      DIRS=("\$HOME/.agents/skills")                  ;;
+  hermes)      DIRS=("\$HOME/.hermes/skills/devops")           ;;
   all)
     DIRS=(
       "\$HOME/.codex/skills"
@@ -204,6 +207,7 @@ case "\$TARGET" in
       "\$HOME/.copilot/skills"
       "\$HOME/.openclaw/workspace/skills"
       "\$HOME/.agents/skills"
+      "\$HOME/.hermes/skills/devops"
     ) ;;
   *) echo "❌ 不支持的 target: \$TARGET"; exit 1 ;;
 esac
