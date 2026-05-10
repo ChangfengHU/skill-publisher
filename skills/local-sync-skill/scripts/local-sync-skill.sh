@@ -15,8 +15,9 @@ get_tool_name() {
     4) echo "Gemini" ;;
     5) echo "Antigravity" ;;
     6) echo "Copilot" ;;
-    7) echo "OpenClaw" ;;
-    8) echo "Agents" ;;
+    7) echo "OpenClaw (workspace)" ;;
+    8) echo "Agents (~/.agents/skills)" ;;
+    9) echo "Hermes" ;;
     *) echo "Unknown" ;;
   esac
 }
@@ -31,32 +32,35 @@ get_tool_path() {
     6) echo "$HOME/.copilot/skills" ;;
     7) echo "$HOME/.openclaw/workspace/skills" ;;
     8) echo "$HOME/.agents/skills" ;;
+    9) echo "$HOME/.hermes/skills/devops" ;;
     *) echo "" ;;
   esac
 }
 
 detect_current_tool() {
   local current_dir="$PWD"
-  
+
   if [[ "$current_dir" == *"/.codex/skills"* ]]; then
     echo "1"; return 0
   elif [[ "$current_dir" == *"/.cursor/skills"* ]]; then
     echo "2"; return 0
   elif [[ "$current_dir" == *"/.claude/skills"* ]]; then
     echo "3"; return 0
-  elif [[ "$current_dir" == *"/.gemini/skills"* ]]; then
-    echo "4"; return 0
   elif [[ "$current_dir" == *"/.gemini/antigravity/skills"* ]]; then
     echo "5"; return 0
+  elif [[ "$current_dir" == *"/.gemini/skills"* ]]; then
+    echo "4"; return 0
   elif [[ "$current_dir" == *"/.copilot/skills"* ]]; then
     echo "6"; return 0
   elif [[ "$current_dir" == *"/.openclaw/workspace/skills"* ]]; then
     echo "7"; return 0
   elif [[ "$current_dir" == *"/.agents/skills"* ]]; then
     echo "8"; return 0
+  elif [[ "$current_dir" == *"/.hermes/skills"* ]]; then
+    echo "9"; return 0
   fi
-  
-  for i in {1..8}; do
+
+  for i in {1..9}; do
     local tool_path=$(get_tool_path $i)
     if [ -d "$tool_path" ] && [ -n "$(ls -A "$tool_path" 2>/dev/null)" ]; then
       echo "$i"; return 0
@@ -170,7 +174,7 @@ main() {
   
   local -a available_targets
   local idx=1
-  for i in {1..8}; do
+  for i in {1..9}; do
     if [ "$i" != "$source_tool_index" ]; then
       echo "  $idx) $(get_tool_name $i)"
       available_targets+=("$i")
@@ -180,9 +184,9 @@ main() {
   echo "  $idx) 全部"
   echo ""
   read -p "请输入序号: " tool_selection
-  
+
   local -a selected_tools
-  
+
   if echo "$tool_selection" | grep -qw "$idx"; then
     selected_tools=("${available_targets[@]}")
   else

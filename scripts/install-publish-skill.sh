@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 一键安装 publish-skill 到本机
 # 用法: bash <(curl -fsSL https://skills.vyibc.com/install-publish-skill.sh)
-#       bash <(curl -fsSL ...) --target codex|cursor|claude|gemini|antigravity|copilot|all
+#       bash <(curl -fsSL ...) --target codex|cursor|claude|gemini|antigravity|copilot|openclaw|agents|hermes|all
 
 set -euo pipefail
 FILE_API="https://upload.vyibc.com"
@@ -28,9 +28,10 @@ if [[ -z "$TARGET" ]]; then
   echo "  6) Copilot      (~/.copilot/skills/)"
   echo "  7) OpenClaw     (~/.openclaw/workspace/skills/)"
   echo "  8) Agents       (~/.agents/skills/)"
-  echo "  9) 全部安装"
+  echo "  9) Hermes       (~/.hermes/skills/devops/)"
+  echo " 10) 全部安装"
   echo ""
-  read -rp "请输入编号 [1-9]: " CHOICE
+  read -rp "请输入编号 [1-10]: " CHOICE
   case "$CHOICE" in
     1) TARGET="codex"       ;;
     2) TARGET="cursor"      ;;
@@ -40,7 +41,8 @@ if [[ -z "$TARGET" ]]; then
     6) TARGET="copilot"     ;;
     7) TARGET="openclaw"    ;;
     8) TARGET="agents"      ;;
-    9) TARGET="all"         ;;
+    9) TARGET="hermes"      ;;
+   10) TARGET="all"         ;;
     *) echo "❌ 无效选项"; exit 1 ;;
   esac
 fi
@@ -56,6 +58,7 @@ skill_dir() {
     copilot)     echo "$HOME/.copilot/skills/$SKILL_NAME" ;;
     openclaw)    echo "$HOME/.openclaw/workspace/skills/$SKILL_NAME" ;;
     agents)      echo "$HOME/.agents/skills/$SKILL_NAME" ;;
+    hermes)      echo "$HOME/.hermes/skills/devops/$SKILL_NAME" ;;
   esac
 }
 
@@ -158,14 +161,15 @@ interface:
       "$HOME/.gemini/antigravity/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.copilot/skills/publish-skill/scripts/publish-skill.sh" \
       "$HOME/.openclaw/workspace/skills/publish-skill/scripts/publish-skill.sh" \
-      "$HOME/.agents/skills/publish-skill/scripts/publish-skill.sh"; do
+      "$HOME/.agents/skills/publish-skill/scripts/publish-skill.sh" \
+      "$HOME/.hermes/skills/devops/publish-skill/scripts/publish-skill.sh"; do
       [ -f "$p" ] && SCRIPT="$p" && break
     done
     ```
 
     ## Step 2: Resolve the skill name
 
-    Run: ls ~/.codex/skills/ ~/.cursor/skills/ ~/.copilot/skills/ ~/.gemini/skills/ ~/.gemini/antigravity/skills/ ~/.claude/skills/ ~/.openclaw/workspace/skills/ ~/.agents/skills/ 2>/dev/null | sort -u
+    Run: ls ~/.codex/skills/ ~/.cursor/skills/ ~/.copilot/skills/ ~/.gemini/skills/ ~/.gemini/antigravity/skills/ ~/.claude/skills/ ~/.openclaw/workspace/skills/ ~/.agents/skills/ ~/.hermes/skills/devops/ 2>/dev/null | sort -u
     (Only check these specific directories. DO NOT package the current working directory unless it is inside one of these paths.)
 
     Matching rules:
@@ -212,7 +216,7 @@ echo "🚀 安装 publish-skill → $TARGET"
 echo ""
 
 if [[ "$TARGET" == "all" ]]; then
-  for t in codex cursor claude gemini antigravity copilot openclaw agents; do
+  for t in codex cursor claude gemini antigravity copilot openclaw agents hermes; do
     install_to "$t"
   done
 else

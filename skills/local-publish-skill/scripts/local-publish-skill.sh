@@ -16,8 +16,9 @@ get_tool_name() {
     4) echo "Gemini" ;;
     5) echo "Antigravity" ;;
     6) echo "Copilot" ;;
-    7) echo "OpenClaw" ;;
-    8) echo "Agents" ;;
+    7) echo "OpenClaw (workspace)" ;;
+    8) echo "Agents (~/.agents/skills)" ;;
+    9) echo "Hermes" ;;
     *) echo "Unknown" ;;
   esac
 }
@@ -33,6 +34,7 @@ get_tool_path() {
     6) echo "$HOME/.copilot/skills" ;;
     7) echo "$HOME/.openclaw/workspace/skills" ;;
     8) echo "$HOME/.agents/skills" ;;
+    9) echo "$HOME/.hermes/skills/devops" ;;
     *) echo "" ;;
   esac
 }
@@ -158,20 +160,21 @@ main() {
   echo "  6) Copilot      (~/.copilot/skills/)"
   echo "  7) OpenClaw     (~/.openclaw/workspace/skills/)"
   echo "  8) Agents       (~/.agents/skills/)"
-  echo "  9) 全部"
+  echo "  9) Hermes       (~/.hermes/skills/devops/)"
+  echo " 10) 全部"
   echo ""
-  echo -n "请输入序号（空格分隔，如: 2 6 或输入 9）: "
+  echo -n "请输入序号（空格分隔，如: 2 6 或输入 10）: "
   read -r tool_selection
-  
+
   local -a selected_tools
-  
+
   # 如果选择全部
-  if echo "$tool_selection" | grep -qw "9"; then
-    selected_tools=(1 2 3 4 5 6 7 8)
+  if echo "$tool_selection" | grep -qw "10"; then
+    selected_tools=(1 2 3 4 5 6 7 8 9)
   else
     # 解析用户输入
     for num in $tool_selection; do
-      if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le 8 ]; then
+      if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le 9 ]; then
         selected_tools+=("$num")
       fi
     done
