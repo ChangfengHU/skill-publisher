@@ -9,7 +9,7 @@
 ## ⚡ 一键安装 publish-skill
 
 ```bash
-bash <(curl -fsSL https://skills.vyibc.com/install-publish-skill.sh)
+bash <(curl -fsSL https://skill.vyibc.com/install-publish-skill.sh)
 ```
 
 安装完成后，直接对你的 AI 说：
@@ -21,7 +21,7 @@ bash <(curl -fsSL https://skills.vyibc.com/install-publish-skill.sh)
 AI 会自动打包、上传，返回一条安装命令：
 
 ```bash
-bash <(curl -fsSL https://skills.vyibc.com/install-my-skill.sh)
+bash <(curl -fsSL https://skill.vyibc.com/install-my-skill.sh)
 ```
 
 把这条命令分享给任何人，他们就能在自己的机器上一键安装你的 skill。
@@ -35,11 +35,11 @@ bash <(curl -fsSL https://skills.vyibc.com/install-my-skill.sh)
          ↓
 1. 在本机查找 skill 目录
    (~/.codex/skills/  ~/.cursor/skills/  ~/.copilot/skills/ 等)
-2. 打包成 my-skill-<timestamp>.zip 上传到 skills.vyibc.com
-3. 生成安装脚本 install-my-skill.sh 上传到 skills.vyibc.com
+2. 打包成 my-skill-<timestamp>.zip 上传到 skill.vyibc.com
+3. 生成安装脚本 install-my-skill.sh 上传到 skill.vyibc.com
 4. 输出一键安装命令
          ↓
-bash <(curl -fsSL https://skills.vyibc.com/install-my-skill.sh)
+bash <(curl -fsSL https://skill.vyibc.com/install-my-skill.sh)
 ```
 
 安装脚本运行时：下载 zip → 解压 → 复制到目标 AI 工具的 skills 目录

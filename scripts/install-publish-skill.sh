@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 一键安装 publish-skill 到本机
-# 用法: bash <(curl -fsSL https://skills.vyibc.com/install-publish-skill.sh)
+# 用法: bash <(curl -fsSL https://skill.vyibc.com/install-publish-skill.sh)
 #       bash <(curl -fsSL ...) --target codex|cursor|claude|gemini|antigravity|copilot|openclaw|agents|hermes|all
 
 set -euo pipefail
@@ -106,10 +106,10 @@ publish my todo-helper skill
 📦 Skill: allocate-domain
 
 🚀 一键安装命令：
-bash <(curl -fsSL https://skills.vyibc.com/install-allocate-domain.sh)
+bash <(curl -fsSL https://skill.vyibc.com/install-allocate-domain.sh)
 
 📄 文档页面（可分享给他人查看）：
-https://skills.vyibc.com/abc123.html
+https://skill.vyibc.com/abc123.html
 
 💡 使用方式：
   复制上方命令，在任意机器上执行即可安装该 skill
@@ -121,10 +121,10 @@ https://skills.vyibc.com/abc123.html
 用户说：把我的 my-skill 发布出去
          ↓
 1. 找到本地 skill 目录（~/.codex/skills/my-skill/）
-2. 打包成 zip 文件并上传到 skills.vyibc.com
+2. 打包成 zip 文件并上传到 skill.vyibc.com
 3. 生成安装脚本（下载 zip -> 解压 -> 安装到目标工具）并上传
 4. 调用 documents:toPage 生成可分享的文档页
-5. 返回 bash <(curl -fsSL https://skills.vyibc.com/install-my-skill.sh) 命令
+5. 返回 bash <(curl -fsSL https://skill.vyibc.com/install-my-skill.sh) 命令
 ```
 
 ## 环境要求
@@ -202,7 +202,7 @@ policy:
 AGENT_EOF
 
   # scripts/publish-skill.sh — 从文件服务器拉取
-  curl -fsSL "https://skills.vyibc.com/publish-skill-core.sh" \
+  curl -fsSL "https://skill.vyibc.com/publish-skill-core.sh" \
     -o "$dir/scripts/publish-skill.sh" 2>/dev/null \
     || { echo "  ⚠️  从文件服务器拉取失败"; exit 1; }
   chmod +x "$dir/scripts/publish-skill.sh"
