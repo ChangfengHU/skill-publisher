@@ -18,6 +18,12 @@ const spec = {
     qualityTarget: 88,
     mode: 'stable'
   },
+  topicInspiration: {
+    sources: [],
+    interest: '',
+    candidates: [],
+    rejected: []
+  },
   topicRadar: {
     whyNow: '',
     emotionalHook: '',
@@ -49,6 +55,15 @@ const spec = {
     antiTemplate: ''
   },
   timeline: [],
+  audioPlan: {
+    provider: 'edge-tts',
+    voice: 'zh-CN-YunjianNeural',
+    rate: '+35%',
+    sceneChunking: true,
+    pauseSeconds: 0.12,
+    voiceDirection: '',
+    subtitleAlignmentPolicy: ''
+  },
   assets: [],
   templateFit: {
     bestExistingTemplate: '',

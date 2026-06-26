@@ -6,14 +6,22 @@ Use these stages unless the user explicitly asks for a smaller task.
 
 | Stage | Output | Gate |
 |---|---|---|
+| topic-inspiration | hot/source-backed idea pool | live source status, interest fit, usable source URL |
 | topic-radar | 3-5 candidate topics | why now, emotional hook, visual potential, source boundary |
 | angle-designer | 2-4 angles | conflict, audience payoff, scene angle, risk boundary |
 | creative-director | 1-3 creative directions | sharp thesis, topic anchors, evidence policy, anti-template rules |
 | script-master | one final script | 45-75s, every 8-12s has a turn, captions and visual hints are new |
 | asset-director | styleLock + assets | each asset has sourceEvidence, semanticAnchors, notGenericReason |
 | template-workshop | template fit decision | templateFitScore, needNewTemplate, development prompt |
-| video-render | MP4 | real video stream, audio track, public or local URL |
+| audio-director | TTS plan | provider, voice, rate, scene chunking, subtitle alignment |
+| video-render | MP4 | real video stream, real audio track, public or local URL |
 | evaluator | PASS / WAIT / REJECT | score, issues, rollback stage |
+
+## Topic Inspiration Prompt
+
+Use this before topic-radar when the user asks for inspiration or only gives broad preferences.
+
+First run `scripts/topic-inspiration.mjs` when live web access is appropriate. Then choose 3-5 candidates by why-now, emotional hook, visual potential, thesis potential, and risk boundary. See `references/topic-inspiration.md`.
 
 ## Topic Radar Prompt
 
@@ -115,6 +123,7 @@ Write one final script, not options. It must include:
 - `remotionScenes`
 - `riskCheck`
 - `antiBoringCheck`
+- `audioPlan`
 
 Timeline items:
 
@@ -130,6 +139,27 @@ Timeline items:
   "receiptItems": ["short item"]
 }
 ```
+
+## Audio Director Prompt
+
+Before rendering, output:
+
+```json
+{
+  "audioPlan": {
+    "provider": "edge-tts|qwen-tts",
+    "voice": "",
+    "rate": "",
+    "sceneChunking": true,
+    "pauseSeconds": 0.12,
+    "voiceDirection": "",
+    "subtitleAlignmentPolicy": "",
+    "fallback": "edge-tts if selected provider fails"
+  }
+}
+```
+
+Use `references/audio-tts.md` for provider and timing rules.
 
 ## Asset Director Prompt
 
@@ -182,7 +212,7 @@ Return:
   "score": 0,
   "passed": [],
   "issues": [],
-  "rollbackStage": "topic-radar|angle-designer|creative-director|script-master|asset-director|template-workshop|video-render",
+  "rollbackStage": "topic-inspiration|topic-radar|angle-designer|creative-director|script-master|audio-director|asset-director|template-workshop|video-render",
   "nextActions": []
 }
 ```
