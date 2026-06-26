@@ -33,7 +33,11 @@ DASHSCOPE_TTS_VOICE=Cherry
 
 Never write API keys into the skill or repo.
 
-Before enabling Qwen/DashScope, run `scripts/tts-credential-check.mjs`. If no usable key is found, follow `references/credential-handling.md`.
+Before enabling Qwen/DashScope, run `scripts/tts-credential-check.mjs`. If no usable key is found, follow `references/credential-handling.md` or run the install wizard:
+
+```bash
+bash <skill-dir>/scripts/install-wizard.sh --skill-dir=<skill-dir> --project-dir=<video-project> --configure-tts
+```
 
 ## Voice Direction
 

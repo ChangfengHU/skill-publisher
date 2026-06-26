@@ -37,10 +37,16 @@ Ask one concise question:
 If the user chooses local persistence, use:
 
 ```bash
-node <skill-dir>/scripts/configure-dashscope-tts.mjs --project-dir=<video-project>
+bash <skill-dir>/scripts/install-wizard.sh --skill-dir=<skill-dir> --project-dir=<video-project> --configure-tts
 ```
 
-Then provide the key through stdin/interactively. Do not pass it as a command argument.
+Then provide the key through stdin/interactively. Do not pass it as a command argument. For non-interactive automation, pipe the key through stdin only.
+
+The lower-level script is:
+
+```bash
+node <skill-dir>/scripts/configure-dashscope-tts.mjs --project-dir=<video-project>
+```
 
 The script writes:
 

@@ -265,18 +265,32 @@ if [[ ! -d "\$EXTRACTED_DIR" ]]; then
 fi
 
 # ── 复制到各目标目录 ──────────────────────────────────────
+INSTALLED_DIRS=()
 for BASE_DIR in "\${DIRS[@]}"; do
   DEST="\${BASE_DIR}/\${SKILL_NAME}"
   mkdir -p "\$BASE_DIR"
   rm -rf "\$DEST"
   cp -r "\$EXTRACTED_DIR" "\$DEST"
   find "\$DEST/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
+  find "\$DEST/scripts" -name "*.mjs" -exec chmod +x {} \; 2>/dev/null || true
+  INSTALLED_DIRS+=("\$DEST")
   echo "  ✅ → \$DEST"
 done
 
 echo ""
 echo "✅ 安装完成！对 AI 说触发词即可使用 \${SKILL_NAME}。"
 echo ""
+
+# ── 可选安装后向导 ────────────────────────────────────────
+PRIMARY_DEST="\${INSTALLED_DIRS[0]:-}"
+if [[ -n "\$PRIMARY_DEST" && -x "\$PRIMARY_DEST/scripts/install-wizard.sh" ]]; then
+  echo "🧭 检测到 \${SKILL_NAME} 安装后向导。"
+  if ! bash "\$PRIMARY_DEST/scripts/install-wizard.sh" --skill-dir="\$PRIMARY_DEST" --install-target="\$TARGET" --project-dir="\$PWD"; then
+    echo "⚠️  安装后向导未完成；skill 已安装成功，可稍后手动运行："
+    echo "   bash \"\$PRIMARY_DEST/scripts/install-wizard.sh\" --skill-dir=\"\$PRIMARY_DEST\" --project-dir=\"<视频项目目录>\""
+  fi
+  echo ""
+fi
 SCRIPT_EOF
 
 chmod +x "$INSTALL_SCRIPT"
