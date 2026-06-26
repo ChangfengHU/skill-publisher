@@ -1,0 +1,8 @@
+interface:
+  display_name: "Viral Video Studio"
+  short_description: "话题到高质量短视频的创作、模板和质检工作流。"
+  brand_color: "#3FB6C6"
+  default_prompt: "Use $viral-video-studio to turn this topic into a high-quality vertical short video with a sharp thesis, styleLock, Remotion template choice, asset plan, render steps, and QC report."
+
+policy:
+  allow_implicit_invocation: true
