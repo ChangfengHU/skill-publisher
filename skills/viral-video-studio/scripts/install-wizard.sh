@@ -20,6 +20,39 @@ resolve_path() {
   fi
 }
 
+read_secret_masked() {
+  local prompt="$1"
+  local out_var="$2"
+  local input=""
+  local char=""
+
+  printf "%s" "$prompt" > /dev/tty
+  while IFS= read -r -s -n 1 char; do
+    if [[ -z "$char" || "$char" == $'\n' || "$char" == $'\r' ]]; then
+      break
+    fi
+    case "$char" in
+      $'\177'|$'\b')
+        if [[ -n "$input" ]]; then
+          input="${input%?}"
+          printf '\b \b' > /dev/tty
+        fi
+        ;;
+      *)
+        input+="$char"
+        printf '*' > /dev/tty
+        ;;
+    esac
+  done
+  printf '\n' > /dev/tty
+  printf -v "$out_var" '%s' "$input"
+}
+
+key_fingerprint() {
+  local key="$1"
+  printf '%s' "$key" | sha256sum | awk '{print substr($1, 1, 12)}'
+}
+
 for arg in "$@"; do
   case "$arg" in
     --skill-dir=*) SKILL_DIR="${arg#*=}" ;;
@@ -70,6 +103,8 @@ if [[ "$CONFIGURE_TTS" == "1" && -t 0 ]]; then
 fi
 
 mkdir -p "$PROJECT_DIR"
+KEY_STORE_PATH="$PROJECT_DIR/.secrets/dashscope_api_key"
+ENV_STORE_PATH="$PROJECT_DIR/.env.local"
 
 CHECK_JSON="$(node "$SKILL_DIR/scripts/tts-credential-check.mjs" --project-dir="$PROJECT_DIR" 2>/dev/null || true)"
 QWEN_USABLE="$(printf '%s' "$CHECK_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.qwenTts?.usable?"1":"0")}catch{process.stdout.write("0")}});')"
@@ -93,10 +128,13 @@ if [[ "$QWEN_USABLE" == "1" && -n "$KEY_FILE_REL" ]]; then
 fi
 
 echo ""
-echo "请输入 DashScope / 百炼 API Key。输入不会回显，也不会写入 skill 包。"
+echo "将保存到："
+echo "   key 文件: $KEY_STORE_PATH"
+echo "   环境文件: $ENV_STORE_PATH"
+echo ""
+echo "请输入 DashScope / 百炼 API Key。输入会显示为星号掩码，不会写入 skill 包。"
 if [[ -t 0 ]]; then
-  read -rsp "DashScope API Key: " DASH_KEY
-  echo ""
+  read_secret_masked "DashScope API Key: " DASH_KEY
 else
   DASH_KEY="$(cat)"
 fi
@@ -106,11 +144,15 @@ if [[ -z "${DASH_KEY// }" ]]; then
   exit 0
 fi
 
+KEY_LEN="${#DASH_KEY}"
+KEY_FP="$(key_fingerprint "$DASH_KEY")"
+echo "已接收 key：${KEY_LEN} 字符，sha256:${KEY_FP}…（非密钥，仅用于确认）"
+
 printf '%s\n' "$DASH_KEY" | node "$SKILL_DIR/scripts/configure-dashscope-tts.mjs" --project-dir="$PROJECT_DIR" >/dev/null
 
 echo "✅ 已配置 qwen-tts。"
 echo "   项目目录: $PROJECT_DIR"
-echo "   key 文件: $PROJECT_DIR/.secrets/dashscope_api_key"
-echo "   环境文件: $PROJECT_DIR/.env.local"
+echo "   key 文件: $KEY_STORE_PATH"
+echo "   环境文件: $ENV_STORE_PATH"
 echo ""
 echo "后续该项目生成视频时会默认请求 qwen-tts；如果服务不可用，再按项目逻辑降级。"

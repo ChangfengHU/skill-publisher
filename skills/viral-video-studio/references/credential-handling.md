@@ -52,6 +52,9 @@ The script writes:
 
 - `<project>/.secrets/dashscope_api_key` with `0600`
 - `<project>/.env.local` entries for `CONTENT_TTS_PROVIDER=qwen-tts`, `DASHSCOPE_API_KEY_FILE`, model, voice, and scene chunking
+- `DASHSCOPE_TTS_ACCESS_STATUS=configured` to clear any stale `denied` fallback state
+
+Interactive installs should show the destination paths before asking for the key. The key input may display `******` as a mask and may report length plus a short SHA-256 fingerprint for confirmation. Never display the raw key.
 
 ## Runtime-Only Option
 
