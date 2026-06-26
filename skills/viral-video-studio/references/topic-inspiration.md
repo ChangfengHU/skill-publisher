@@ -1,6 +1,18 @@
 # Topic Inspiration Rules
 
-Use this when the user asks for inspiration, wants a new topic, asks what is hot today, or gives only a broad interest area.
+Use this when the user asks for inspiration, wants a new topic, asks what is hot today, asks "你能做什么", or gives only a broad interest area.
+
+If the user asks what the studio can do, answer briefly:
+
+- topic inspiration from hot sources
+- angle/thesis design
+- scene-by-scene script
+- TTS/audio plan
+- image asset prompts
+- Remotion template selection or workshop
+- render/upload/QC
+
+Then offer to run topic inspiration immediately.
 
 ## Source Strategy
 

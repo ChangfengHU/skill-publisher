@@ -1,6 +1,6 @@
 ---
 name: viral-video-studio
-description: Turn topic inspiration, hot trends, IP discussions, AI tool/news items, career/developer topics, or creator briefs into high-quality vertical short videos. Use when Codex needs to recommend video topics, design sharp angles, write scene-by-scene copy, plan TTS narration/voice speed/subtitle alignment, create styleLock/asset prompts, choose or invent Remotion templates, render/upload MP4s, analyze quality, or build a reusable "template workshop" workflow instead of generic scripts or static slides.
+description: Turn topic inspiration, hot trends, IP discussions, AI tool/news items, career/developer topics, or creator briefs into high-quality vertical short videos. Use when Codex needs to answer what the video studio can do, recommend current video topics, request/configure TTS credentials such as DashScope/Qwen app keys, design sharp angles, write scene-by-scene copy, plan TTS narration/voice speed/subtitle alignment, create styleLock/asset prompts, choose or invent Remotion templates, render/upload MP4s, analyze quality, or build a reusable "template workshop" workflow instead of generic scripts or static slides.
 ---
 
 # Viral Video Studio
@@ -35,7 +35,7 @@ For the full pipeline and JSON contracts, read `references/workflow.md`.
 
 ## Topic Inspiration
 
-When the user asks for "今天热搜", "给我点灵感", "换个话题", or does not provide a usable topic, run:
+When the user asks "你能做什么", "今天热搜", "给我点灵感", "换个话题", or does not provide a usable topic, answer with the studio capabilities and offer to run topic inspiration. If the user wants ideas now, run:
 
 ```bash
 node <skill-dir>/scripts/topic-inspiration.mjs --interest="AI,程序员,影视,微博热搜" --limit=24
@@ -57,6 +57,14 @@ For fit scoring, template workshop prompts, and code-change boundaries, read `re
 ## Audio and TTS
 
 The default production path should include real narration, not silent slides. For `content-agent-workbench`, use the built-in TTS path in `server/videoRenderer.js`: `CONTENT_TTS_PROVIDER=edge-tts` by default, with optional `qwen-tts`/DashScope when credentials and access are valid. Read `references/audio-tts.md` before changing voice, speed, chunking, or subtitle timing.
+
+If the user asks to use Qwen/Bailian/DashScope TTS, check credentials first:
+
+```bash
+node <skill-dir>/scripts/tts-credential-check.mjs --project-dir=<video-project>
+```
+
+If no usable key is configured, ask the user for a DashScope app key or a local key-file path. Never store secrets in the skill, never print the key, and read `references/credential-handling.md` before persisting any credential.
 
 ## Rendering Project Behavior
 
