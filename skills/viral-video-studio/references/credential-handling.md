@@ -51,8 +51,13 @@ node <skill-dir>/scripts/configure-dashscope-tts.mjs --project-dir=<video-projec
 The script writes:
 
 - `<project>/.secrets/dashscope_api_key` with `0600`
-- `<project>/.env.local` entries for `CONTENT_TTS_PROVIDER=qwen-tts`, `DASHSCOPE_API_KEY_FILE`, model, voice, and scene chunking
-- `DASHSCOPE_TTS_ACCESS_STATUS=configured` to clear any stale `denied` fallback state
+- `<project>/.env.local` entries for `CONTENT_TTS_PROVIDER`, `DASHSCOPE_API_KEY_FILE`, model, voice, access status, and scene chunking
+
+The current installer verifies TTS access with a short DashScope request before enabling Qwen TTS:
+
+- success: set `CONTENT_TTS_PROVIDER=qwen-tts` and `DASHSCOPE_TTS_ACCESS_STATUS=verified`
+- model/account denied: save the key, set `CONTENT_TTS_PROVIDER=edge-tts`, set `DASHSCOPE_TTS_ACCESS_STATUS=denied`, and tell the user to open model access in Bailian
+- network/unknown verification failure: save the key and mark status `unknown`; do not print the key
 
 Interactive installs should show the destination paths before asking for the key. The key input may display `******` as a mask and may report length plus a short SHA-256 fingerprint for confirmation. Never display the raw key.
 

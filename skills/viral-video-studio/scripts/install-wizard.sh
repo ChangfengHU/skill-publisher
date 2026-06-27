@@ -53,6 +53,32 @@ key_fingerprint() {
   printf '%s' "$key" | sha256sum | awk '{print substr($1, 1, 12)}'
 }
 
+report_config_result() {
+  local config_json="$1"
+  local project_dir="$2"
+  local provider status code message model voice
+
+  provider="$(printf '%s' "$config_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.provider||"")}catch{}});')"
+  status="$(printf '%s' "$config_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.verification?.status||"")}catch{}});')"
+  code="$(printf '%s' "$config_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.verification?.code||"")}catch{}});')"
+  message="$(printf '%s' "$config_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.verification?.message||"")}catch{}});')"
+  model="$(printf '%s' "$config_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.model||"")}catch{}});')"
+  voice="$(printf '%s' "$config_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.voice||"")}catch{}});')"
+
+  echo "   项目目录: $project_dir"
+  echo "   key 文件: $project_dir/.secrets/dashscope_api_key"
+  echo "   环境文件: $project_dir/.env.local"
+  echo "   模型/音色: ${model:-unknown} / ${voice:-unknown}"
+  if [[ "$provider" == "qwen-tts" && "$status" == "verified" ]]; then
+    echo "✅ 已验证并启用 qwen-tts。后续该项目生成视频会默认使用千问 TTS。"
+  else
+    echo "⚠️  key 已保存，但 TTS 权限验证未通过，当前默认仍使用 edge-tts。"
+    [[ -n "$code" ]] && echo "   验证代码: $code"
+    [[ -n "$message" ]] && echo "   验证信息: $message"
+    echo "   处理方式: 到百炼控制台开通对应 TTS 模型权限后，重新运行本向导。"
+  fi
+}
+
 for arg in "$@"; do
   case "$arg" in
     --skill-dir=*) SKILL_DIR="${arg#*=}" ;;
@@ -120,9 +146,9 @@ if [[ "$QWEN_USABLE" == "1" && -n "$KEY_FILE_REL" ]]; then
   KEY_FILE="$KEY_FILE_REL"
   [[ "$KEY_FILE" = /* ]] || KEY_FILE="$PROJECT_DIR/$KEY_FILE"
   if [[ -f "$KEY_FILE" ]]; then
-    echo "检测到已有 DashScope key 文件，将启用 qwen-tts。"
-    node "$SKILL_DIR/scripts/configure-dashscope-tts.mjs" --project-dir="$PROJECT_DIR" < "$KEY_FILE" >/dev/null
-    echo "✅ 已启用 qwen-tts：$PROJECT_DIR/.env.local"
+    echo "检测到已有 DashScope key 文件，将验证 TTS 权限。"
+    CONFIG_JSON="$(node "$SKILL_DIR/scripts/configure-dashscope-tts.mjs" --project-dir="$PROJECT_DIR" < "$KEY_FILE")"
+    report_config_result "$CONFIG_JSON" "$PROJECT_DIR"
     exit 0
   fi
 fi
@@ -148,11 +174,5 @@ KEY_LEN="${#DASH_KEY}"
 KEY_FP="$(key_fingerprint "$DASH_KEY")"
 echo "已接收 key：${KEY_LEN} 字符，sha256:${KEY_FP}…（非密钥，仅用于确认）"
 
-printf '%s\n' "$DASH_KEY" | node "$SKILL_DIR/scripts/configure-dashscope-tts.mjs" --project-dir="$PROJECT_DIR" >/dev/null
-
-echo "✅ 已配置 qwen-tts。"
-echo "   项目目录: $PROJECT_DIR"
-echo "   key 文件: $KEY_STORE_PATH"
-echo "   环境文件: $ENV_STORE_PATH"
-echo ""
-echo "后续该项目生成视频时会默认请求 qwen-tts；如果服务不可用，再按项目逻辑降级。"
+CONFIG_JSON="$(printf '%s\n' "$DASH_KEY" | node "$SKILL_DIR/scripts/configure-dashscope-tts.mjs" --project-dir="$PROJECT_DIR")"
+report_config_result "$CONFIG_JSON" "$PROJECT_DIR"
