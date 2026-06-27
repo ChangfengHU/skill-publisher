@@ -137,9 +137,10 @@ if [[ "$SKIP_TTS" == "1" ]]; then
 fi
 
 if [[ "$CONFIGURE_TTS" != "1" && ! -t 0 ]]; then
-  echo "当前是非交互安装，已跳过 TTS 配置。"
+  echo "当前是非交互安装，无法打开 key 输入窗口，已跳过 TTS 配置。"
   echo "稍后可手动运行："
   echo "  bash \"$SKILL_DIR/scripts/install-wizard.sh\" --skill-dir=\"$SKILL_DIR\" --project-dir=\"<视频项目目录>\" --configure-tts"
+  echo "手动配置时，输入中会显示星号，提交后会显示脱敏 key、长度和 sha256 指纹供你确认。"
   exit 0
 fi
 
@@ -167,11 +168,6 @@ QWEN_USABLE="$(printf '%s' "$CHECK_JSON" | node -e 'let s="";process.stdin.on("d
 ACTIVE_PROVIDER="$(printf '%s' "$CHECK_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.activeProvider||"")}catch{}});')"
 KEY_FILE_REL="$(printf '%s' "$CHECK_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);const src=(j.qwenTts?.keySources||[]).find(x=>x.startsWith("file:"));process.stdout.write(src?src.slice(5):"")}catch{}});')"
 
-if [[ "$QWEN_USABLE" == "1" && "$ACTIVE_PROVIDER" == "qwen-tts" ]]; then
-  echo "检测到该项目已经启用 qwen-tts。无需重复配置。"
-  exit 0
-fi
-
 if [[ "$QWEN_USABLE" == "1" && -n "$KEY_FILE_REL" ]]; then
   KEY_FILE="$KEY_FILE_REL"
   [[ "$KEY_FILE" = /* ]] || KEY_FILE="$PROJECT_DIR/$KEY_FILE"
@@ -179,6 +175,15 @@ if [[ "$QWEN_USABLE" == "1" && -n "$KEY_FILE_REL" ]]; then
     EXISTING_KEY="$(tr -d '\r\n' < "$KEY_FILE")"
     EXISTING_KEY_MASK="$(key_mask "$EXISTING_KEY")"
     EXISTING_KEY_FP="$(key_fingerprint "$EXISTING_KEY")"
+    if [[ "$ACTIVE_PROVIDER" == "qwen-tts" ]]; then
+      echo "检测到该项目已经启用 qwen-tts。无需重复配置。"
+      echo "   项目目录: $PROJECT_DIR"
+      echo "   key 文件: $KEY_FILE"
+      echo "   环境文件: $ENV_STORE_PATH"
+      echo "   已配置 key: $EXISTING_KEY_MASK（${#EXISTING_KEY} 字符，sha256:${EXISTING_KEY_FP}…）"
+      echo "   如需更换 key，请重新运行本向导并先删除或替换上述 key 文件。"
+      exit 0
+    fi
     echo "检测到已有 DashScope key 文件，将验证 TTS 权限。"
     echo "已有 key：$EXISTING_KEY_MASK（${#EXISTING_KEY} 字符，sha256:${EXISTING_KEY_FP}…）"
     CONFIG_JSON="$(node "$SKILL_DIR/scripts/configure-dashscope-tts.mjs" --project-dir="$PROJECT_DIR" < "$KEY_FILE")"
@@ -187,12 +192,22 @@ if [[ "$QWEN_USABLE" == "1" && -n "$KEY_FILE_REL" ]]; then
   fi
 fi
 
+if [[ "$QWEN_USABLE" == "1" && "$ACTIVE_PROVIDER" == "qwen-tts" ]]; then
+  echo "检测到该项目已经启用 qwen-tts。"
+  echo "   项目目录: $PROJECT_DIR"
+  echo "   环境文件: $ENV_STORE_PATH"
+  echo "   key 来源: 环境变量或外部 key 文件；当前向导没有可读取的本地 key 文件，因此不显示预览。"
+  echo "   如需在窗口里确认脱敏 key，请使用 .secrets/dashscope_api_key 文件方式配置。"
+  exit 0
+fi
+
 echo ""
 echo "将保存到："
 echo "   key 文件: $KEY_STORE_PATH"
 echo "   环境文件: $ENV_STORE_PATH"
 echo ""
 echo "请输入 DashScope / 百炼 API Key。输入会显示为星号掩码，不会写入 skill 包。"
+echo "提交后会显示脱敏 key、长度和 sha256 指纹；不会显示原文。"
 if [[ -t 0 ]]; then
   read_secret_masked "DashScope API Key: " DASH_KEY
 else

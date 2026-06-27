@@ -59,7 +59,9 @@ The current installer verifies TTS access with a short DashScope request before 
 - model/account denied: save the key, set `CONTENT_TTS_PROVIDER=edge-tts`, set `DASHSCOPE_TTS_ACCESS_STATUS=denied`, and tell the user to open model access in Bailian
 - network/unknown verification failure: save the key and mark status `unknown`; do not print the key
 
-Interactive installs must show the destination paths before asking for the key. The key input should display `******` as a mask while typing, then report a masked preview, length, and a short SHA-256 fingerprint for confirmation. If an existing key file is detected, show the same masked preview and fingerprint before verification. Never display the raw key.
+Interactive installs must show the destination paths before asking for the key. The key input should display `******` as a mask while typing, then report a masked preview, length, and a short SHA-256 fingerprint for confirmation. If an existing key file is detected, including when Qwen TTS is already enabled, show the same masked preview and fingerprint before exiting or verifying. Never display the raw key.
+
+If the installer is running in a non-interactive shell, it cannot open the key prompt. Print the manual `install-wizard.sh --configure-tts` command and explain that the interactive run will show a masked preview after submission.
 
 ## Runtime-Only Option
 
