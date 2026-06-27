@@ -59,7 +59,7 @@ The current installer verifies TTS access with a short DashScope request before 
 - model/account denied: save the key, set `CONTENT_TTS_PROVIDER=edge-tts`, set `DASHSCOPE_TTS_ACCESS_STATUS=denied`, and tell the user to open model access in Bailian
 - network/unknown verification failure: save the key and mark status `unknown`; do not print the key
 
-Interactive installs should show the destination paths before asking for the key. The key input may display `******` as a mask and may report length plus a short SHA-256 fingerprint for confirmation. Never display the raw key.
+Interactive installs must show the destination paths before asking for the key. The key input should display `******` as a mask while typing, then report a masked preview, length, and a short SHA-256 fingerprint for confirmation. If an existing key file is detected, show the same masked preview and fingerprint before verification. Never display the raw key.
 
 ## Runtime-Only Option
 
