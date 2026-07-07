@@ -14,7 +14,9 @@ SKILL_NAME="${1:-}"
 FILE_API_URL="${FILE_API_URL:-https://upload-r2.vyibc.com}"
 FILE_API_TOKEN="${FILE_API_TOKEN:-123456}"
 CDN_URL="${CDN_URL:-https://skill.vyibc.com}"
+RELEASE_PATH="${RELEASE_PATH:-${SKILL_NAME}/release}"
 ALLOW_EXTERNAL_SKILL_DIR="${ALLOW_EXTERNAL_SKILL_DIR:-0}"
+GENERATE_SOP_CONTRACT="${GENERATE_SOP_CONTRACT:-1}"
 
 resolve_abs_path() {
   local path="$1"
@@ -122,12 +124,29 @@ trap 'rm -rf "$TMPDIR_WORK"' EXIT
 TS=$(date +%Y%m%d%H%M%S)
 ZIP_FILENAME="${SKILL_NAME}-${TS}.zip"
 ZIP_PATH="${TMPDIR_WORK}/${ZIP_FILENAME}"
+PACKAGE_ROOT="${TMPDIR_WORK}/package"
+PACKAGE_SKILL_DIR="${PACKAGE_ROOT}/${SKILL_NAME}"
+CONTRACT_PATH="${PACKAGE_SKILL_DIR}/sop-skill-contract.json"
+
+mkdir -p "$PACKAGE_ROOT"
+cp -R "$SKILL_DIR" "$PACKAGE_SKILL_DIR"
+
+if [[ "$GENERATE_SOP_CONTRACT" == "1" ]]; then
+  CONTRACT_TOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/generate-sop-skill-contract.py"
+  if [[ -f "$CONTRACT_TOOL" ]]; then
+    echo "🧾 生成 SOP Skill Contract..."
+    python3 "$CONTRACT_TOOL" "$PACKAGE_SKILL_DIR" --output "$CONTRACT_PATH" >/dev/null
+    echo "   ✅ ${CONTRACT_PATH}"
+  else
+    echo "⚠️  找不到 contract 生成器，跳过 sop-skill-contract.json" >&2
+  fi
+fi
 
 # ── 打 zip（保留目录结构，zip 解压后得到 <skill-name>/ 目录）──
 echo "🗜  压缩..."
-# 从 skill 目录的上一级打包，解压后是 <skill-name>/...
+# 从 package 目录打包，解压后是 <skill-name>/...
 if command -v zip &>/dev/null; then
-  (cd "$(dirname "$SKILL_DIR")" && zip -qr "$ZIP_PATH" "$(basename "$SKILL_DIR")")
+  (cd "$PACKAGE_ROOT" && zip -qr "$ZIP_PATH" "$SKILL_NAME")
 elif command -v python3 &>/dev/null; then
   python3 -c "
 import zipfile, os, sys
@@ -141,7 +160,7 @@ with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
             abs_path = os.path.join(root, f)
             arc_name = os.path.join(base, os.path.relpath(abs_path, skill_dir))
             zf.write(abs_path, arc_name)
-" "$SKILL_DIR" "$ZIP_PATH"
+	" "$PACKAGE_SKILL_DIR" "$ZIP_PATH"
 else
   echo "❌ 需要 zip 或 python3 来打包，请先安装其中一个" >&2
   exit 1
@@ -155,7 +174,8 @@ ZIP_UPLOAD=$(curl -s --location "${FILE_API_URL}" \
   --header "Authorization: Bearer ${FILE_API_TOKEN}" \
   --form "file=@${ZIP_PATH};type=text/plain" \
   --form "domain=${CDN_URL}" \
-  --form "name=${ZIP_FILENAME}")
+  --form "name=${ZIP_FILENAME}" \
+  --form "path=${RELEASE_PATH}")
 ZIP_URL=$(echo "$ZIP_UPLOAD" | python3 -c "import sys,json; print(json.load(sys.stdin).get('image_url',''))" 2>/dev/null || true)
 
 if [[ -z "$ZIP_URL" ]]; then
@@ -343,10 +363,11 @@ echo "✅ Skill 发布成功！"
 echo ""
 echo "📦 Skill:   ${SKILL_NAME}"
 echo "🗜  包文件:  ${ZIP_URL}"
+[[ -f "$CONTRACT_PATH" ]] && echo "🧾 Contract: sop-skill-contract.json"
 echo ""
 echo "🚀 一键安装命令："
 echo ""
-echo "   bash <(curl -fsSL ${SCRIPT_URL})"
+echo "   bash <(curl -fsSL '${SCRIPT_URL}?ts=${TS}')"
 echo ""
 [[ -n "$DOC_URL" ]] && echo "📄 文档页面: ${DOC_URL}"
 echo "💾 本地备份: ${LOCAL_OUT}"
@@ -358,9 +379,10 @@ python3 -c "
 import json
 print('PUBLISH_RESULT_JSON=' + json.dumps({
   'skill': '${SKILL_NAME}',
-  'install_command': 'bash <(curl -fsSL ${SCRIPT_URL})',
+  'install_command': \"bash <(curl -fsSL '${SCRIPT_URL}?ts=${TS}')\",
   'script_url': '${SCRIPT_URL}',
   'zip_url': '${ZIP_URL}',
+  'contract_path': 'sop-skill-contract.json',
   'doc_url': '${DOC_URL}',
   'local_backup': '${LOCAL_OUT}'
 }))

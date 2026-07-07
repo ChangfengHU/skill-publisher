@@ -49,11 +49,27 @@ https://skill.vyibc.com/abc123.html
 用户说：把我的 my-skill 发布出去
          ↓
 1. 找到本地 skill 目录（~/.codex/skills/my-skill/）
-2. 打包成 zip 文件并上传到 skill.vyibc.com
-3. 生成安装脚本（下载 zip -> 解压 -> 安装到目标工具）并上传
-4. 调用 documents:toPage 生成可分享的文档页
-5. 返回 bash <(curl -fsSL https://skill.vyibc.com/install-my-skill.sh) 命令
+2. 生成/校验 sop-skill-contract.json sidecar（不改变 skill 本身执行）
+3. 打包成 zip 文件并上传到 skill.vyibc.com
+4. 生成安装脚本（下载 zip -> 解压 -> 安装到目标工具）并上传
+5. 调用 documents:toPage 生成可分享的文档页
+6. 返回 bash <(curl -fsSL https://skill.vyibc.com/install-my-skill.sh) 命令
 ```
+
+## SOP Skill Contract
+
+发布脚本会默认在打包副本中生成 `sop-skill-contract.json`。这个文件是
+SOP Node Builder / A2A Runtime 的旁路元数据，普通 agent 可以忽略它。
+
+核心约束：
+
+- Node 公开入参固定为 `instruction + materials`。
+- CLI 参数、URL、token、输出目录等只作为内部 adapter hints。
+- 输出统一按 `SOP_OUTPUT_DIR` + `manifest.json` / artifacts 发现。
+- 不把任何密钥值写进 contract。
+
+详细字段和 LLM patch 提示词见 `references/sop-skill-contract-v1.md`。
+发布后的服务验收标准见 `references/sop-skill-service-acceptance.md`。
 
 ## 环境要求
 
