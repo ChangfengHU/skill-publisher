@@ -17,6 +17,7 @@ CDN_URL="${CDN_URL:-https://skill.vyibc.com}"
 RELEASE_PATH="${RELEASE_PATH:-${SKILL_NAME}/release}"
 ALLOW_EXTERNAL_SKILL_DIR="${ALLOW_EXTERNAL_SKILL_DIR:-0}"
 GENERATE_SOP_CONTRACT="${GENERATE_SOP_CONTRACT:-1}"
+PRESERVE_SOP_CONTRACT="${PRESERVE_SOP_CONTRACT:-1}"
 
 resolve_abs_path() {
   local path="$1"
@@ -131,7 +132,11 @@ CONTRACT_PATH="${PACKAGE_SKILL_DIR}/sop-skill-contract.json"
 mkdir -p "$PACKAGE_ROOT"
 cp -R "$SKILL_DIR" "$PACKAGE_SKILL_DIR"
 
-if [[ "$GENERATE_SOP_CONTRACT" == "1" ]]; then
+if [[ -f "$CONTRACT_PATH" && "$PRESERVE_SOP_CONTRACT" == "1" ]]; then
+  echo "🧾 使用 Skill 自带的 reviewed SOP Skill Contract..."
+  python3 -m json.tool "$CONTRACT_PATH" >/dev/null
+  echo "   ✅ ${CONTRACT_PATH}"
+elif [[ "$GENERATE_SOP_CONTRACT" == "1" ]]; then
   CONTRACT_TOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/generate-sop-skill-contract.py"
   if [[ -f "$CONTRACT_TOOL" ]]; then
     echo "🧾 生成 SOP Skill Contract..."
@@ -166,6 +171,8 @@ else
   exit 1
 fi
 echo "   ✅ $(du -sh "$ZIP_PATH" | cut -f1) — ${ZIP_PATH}"
+ZIP_SHA256="$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "$ZIP_PATH")"
+echo "   🔐 SHA-256: ${ZIP_SHA256}"
 echo ""
 
 # ── 上传 zip ──────────────────────────────────────────────
@@ -197,6 +204,7 @@ set -euo pipefail
 
 SKILL_NAME="${SKILL_NAME}"
 ZIP_URL="${ZIP_URL}"
+ZIP_SHA256="${ZIP_SHA256}"
 
 # ── 工具选择 ──────────────────────────────────────────────
 TARGET="\${1:-}"
@@ -263,6 +271,22 @@ trap 'rm -rf "\$TMPWORK"' EXIT
 
 echo "   下载 \${ZIP_URL} ..."
 curl -fsSL "\${ZIP_URL}" -o "\${TMPWORK}/skill.zip"
+
+if command -v sha256sum &>/dev/null; then
+  ACTUAL_SHA256=\$(sha256sum "\${TMPWORK}/skill.zip" | awk '{print \$1}')
+elif command -v shasum &>/dev/null; then
+  ACTUAL_SHA256=\$(shasum -a 256 "\${TMPWORK}/skill.zip" | awk '{print \$1}')
+elif command -v python3 &>/dev/null; then
+  ACTUAL_SHA256=\$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "\${TMPWORK}/skill.zip")
+else
+  echo "❌ 需要 sha256sum、shasum 或 python3 来验证安装包" >&2
+  exit 1
+fi
+if [[ "\${ACTUAL_SHA256}" != "\${ZIP_SHA256}" ]]; then
+  echo "❌ 安装包 SHA-256 校验失败" >&2
+  exit 1
+fi
+echo "   🔐 SHA-256 校验通过"
 
 # ── 解压到临时目录（优先 unzip，回退到 python3）────────────
 mkdir -p "\${TMPWORK}/extracted"
