@@ -80,6 +80,16 @@ ALLOW_EXTERNAL_SKILL_DIR=1 bash ~/.codex/skills/publish-skill/scripts/publish-sk
 FILE_API_URL=http://your-server:1002 bash publish-skill.sh <skill-name>
 ```
 
+## 发布后验证
+
+`viral-video-studio` 带有安装后 TTS 配置向导。发布或修改该 skill 后，运行 smoke 脚本验证公网安装包、二阶段 TTS 配置、key 脱敏显示、文件权限和 `/` 目录保护：
+
+```bash
+bash scripts/verify-viral-video-studio-install.sh
+```
+
+该脚本只使用临时目录和假 key，不会写入真实用户配置。
+
 ---
 
 ## 兼容性

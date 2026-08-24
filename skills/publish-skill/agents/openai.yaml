@@ -29,11 +29,27 @@ interface:
 
     Run: bash ~/.codex/skills/publish-skill/scripts/publish-skill.sh "<SKILL_NAME>"
 
-    ## Step 3: Present result
+    ## Step 3: Post-publish smoke test
+
+    If the current workspace contains a matching verifier, run it before reporting success.
+
+    For `viral-video-studio`, if `scripts/verify-viral-video-studio-install.sh` exists in the current workspace, run:
+    ```bash
+    bash scripts/verify-viral-video-studio-install.sh
+    ```
+
+    This verifier downloads the public install script, installs into a temporary HOME, runs the TTS second-step wizard with a fake key, checks 0600 permissions, confirms `/` directory protection, and verifies raw key text is not printed. If it fails, report the failure and do not claim the published install command is ready.
+    Read `PUBLISH_RESULT_JSON.post_publish_smoke` and `PUBLISH_RESULT_JSON.manifest_url` from the script output and report those fields directly.
+
+    ## Step 4: Present result
 
     ✅ Skill 发布成功！
 
     📦 Skill: <SKILL_NAME>
+
+    🧪 发布后验证：<post_publish_smoke.status>
+
+    🧾 最新 manifest：<manifest_url>
 
     🚀 一键安装命令：
     ```bash

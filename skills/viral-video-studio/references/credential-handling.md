@@ -26,6 +26,12 @@ The script reports safe metadata only:
 - likely config files
 - next actions
 
+For quick status checks:
+
+```bash
+bash <skill-dir>/scripts/install-wizard.sh --skill-dir=<skill-dir> --project-dir=<video-project> --show-tts-status
+```
+
 ## If Key Is Missing
 
 Ask one concise question:
@@ -41,6 +47,13 @@ bash <skill-dir>/scripts/install-wizard.sh --skill-dir=<skill-dir> --project-dir
 ```
 
 Then provide the key through stdin/interactively. Do not pass it as a command argument. For non-interactive automation, pipe the key through stdin only.
+
+Recommended two-step flow:
+
+1. `bash <skill-dir>/scripts/install-wizard.sh --skill-dir=<skill-dir> --project-dir=<video-project> --show-tts-status`
+2. `bash <skill-dir>/scripts/install-wizard.sh --skill-dir=<skill-dir> --project-dir=<video-project> --configure-tts`
+
+Only step 2 writes files to disk (`.secrets/dashscope_api_key` + `.env.local`).
 
 The lower-level script is:
 
@@ -58,8 +71,11 @@ The current installer verifies TTS access with a short DashScope request before 
 - success: set `CONTENT_TTS_PROVIDER=qwen-tts` and `DASHSCOPE_TTS_ACCESS_STATUS=verified`
 - model/account denied: save the key, set `CONTENT_TTS_PROVIDER=edge-tts`, set `DASHSCOPE_TTS_ACCESS_STATUS=denied`, and tell the user to open model access in Bailian
 - network/unknown verification failure: save the key and mark status `unknown`; do not print the key
+- test-only skipped verification: when `VIRAL_VIDEO_STUDIO_TTS_SKIP_VERIFY=1` is set, save the key, set `CONTENT_TTS_PROVIDER=qwen-tts`, and set `DASHSCOPE_TTS_ACCESS_STATUS=skipped`; do not use this as proof that real TTS access works
 
-Interactive installs must show the destination paths before asking for the key. The key input should display `******` as a mask while typing, then report a masked preview, length, and a short SHA-256 fingerprint for confirmation. If an existing key file is detected, including when Qwen TTS is already enabled, show the same masked preview and fingerprint before exiting or verifying. Never display the raw key.
+Interactive installs must show a TTS configuration window before asking whether to configure TTS. The window must include the video project directory, default key path, `.env.local` path, save/read rules, current provider, model/voice/access status, and any existing key as a masked preview with length and short SHA-256 fingerprint. Also print a `--show-tts-status` command so the user can re-open the same safe status window later. The key input should display `******` as a mask while typing, then report the same masked preview, length, and fingerprint for confirmation. If an existing key file is detected, including when Qwen TTS is already enabled, show the same masked preview, file path, permission mode, and fingerprint before exiting or verifying. Never display the raw key.
+
+If the install command is launched from `/`, normalize the video project directory to `$HOME` before showing or writing `.secrets/dashscope_api_key`. Do not write `//.secrets/...` or `/.env.local`.
 
 If the installer is running in a non-interactive shell, it cannot open the key prompt. Print the manual `install-wizard.sh --configure-tts` command and explain that the interactive run will show a masked preview after submission.
 

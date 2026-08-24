@@ -58,7 +58,7 @@ For fit scoring, template workshop prompts, and code-change boundaries, read `re
 
 The default production path should include real narration, not silent slides. For `content-agent-workbench`, use the built-in TTS path in `server/videoRenderer.js`: `CONTENT_TTS_PROVIDER=edge-tts` by default, with optional `qwen-tts`/DashScope when credentials and access are valid. Read `references/audio-tts.md` before changing voice, speed, chunking, or subtitle timing.
 
-The installer includes a second-step setup wizard for this skill. It asks whether to configure DashScope/Qwen TTS for a video project. If the user provides a key, the wizard writes the key to the selected project's `.secrets/dashscope_api_key`, updates `.env.local`, and makes `qwen-tts` the default for that project.
+The installer includes a second-step setup wizard for this skill. It asks whether to configure DashScope/Qwen TTS for a video project. If the user provides a key, the wizard writes the key to the selected project's `.secrets/dashscope_api_key`, updates `.env.local`, and enables `qwen-tts` only when verification succeeds or the operator explicitly skips verification for a test run. If the account/model is denied, keep `edge-tts` active and report the safe diagnostic.
 
 If the user asks to use Qwen/Bailian/DashScope TTS, check credentials first:
 

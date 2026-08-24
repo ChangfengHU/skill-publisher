@@ -15,6 +15,13 @@ FILE_API_URL="${FILE_API_URL:-https://upload-r2.vyibc.com}"
 FILE_API_TOKEN="${FILE_API_TOKEN:-123456}"
 CDN_URL="${CDN_URL:-https://skill.vyibc.com}"
 ALLOW_EXTERNAL_SKILL_DIR="${ALLOW_EXTERNAL_SKILL_DIR:-0}"
+RUN_POST_PUBLISH_SMOKE="${RUN_POST_PUBLISH_SMOKE:-1}"
+INVOKE_DIR="$(pwd -P)"
+POST_PUBLISH_SMOKE_STATUS="skipped"
+POST_PUBLISH_SMOKE_SCRIPT=""
+POST_PUBLISH_SMOKE_REASON="no matching smoke script"
+MANIFEST_URL=""
+MANIFEST_UPLOAD_STATUS="not-uploaded"
 
 resolve_abs_path() {
   local path="$1"
@@ -42,6 +49,61 @@ is_allowed_skill_dir() {
   done
 
   return 1
+}
+
+repo_root_for_skill_dir() {
+  local dir_abs="$1"
+  local parent grandparent
+  parent="$(dirname "$dir_abs")"
+  grandparent="$(dirname "$parent")"
+  if [[ "$(basename "$parent")" == "skills" && -d "$grandparent/scripts" ]]; then
+    echo "$grandparent"
+    return
+  fi
+  echo ""
+}
+
+find_post_publish_smoke() {
+  local repo_root candidate
+  case "$SKILL_NAME" in
+    viral-video-studio)
+      for candidate in \
+        "$INVOKE_DIR/scripts/verify-viral-video-studio-install.sh" \
+        "$(repo_root_for_skill_dir "$SKILL_DIR")/scripts/verify-viral-video-studio-install.sh"; do
+        [[ -n "$candidate" && -x "$candidate" ]] && echo "$candidate" && return
+      done
+      ;;
+  esac
+  repo_root="$(repo_root_for_skill_dir "$SKILL_DIR")"
+  for candidate in \
+    "$INVOKE_DIR/scripts/verify-${SKILL_NAME}-install.sh" \
+    "$repo_root/scripts/verify-${SKILL_NAME}-install.sh"; do
+    [[ -n "$candidate" && -x "$candidate" ]] && echo "$candidate" && return
+  done
+}
+
+run_post_publish_smoke() {
+  local smoke_script="$1"
+  if [[ -z "$smoke_script" ]]; then
+    POST_PUBLISH_SMOKE_STATUS="skipped"
+    POST_PUBLISH_SMOKE_SCRIPT=""
+    POST_PUBLISH_SMOKE_REASON="no matching smoke script"
+    return 0
+  fi
+  echo ""
+  echo "🧪 运行发布后验证..."
+  echo "   ${smoke_script}"
+  POST_PUBLISH_SMOKE_STATUS="running"
+  POST_PUBLISH_SMOKE_SCRIPT="$smoke_script"
+  POST_PUBLISH_SMOKE_REASON=""
+  if INSTALL_URL="${SCRIPT_URL}?v=${TS}" EXPECTED_ZIP_URL="${ZIP_URL}" bash "$smoke_script"; then
+    POST_PUBLISH_SMOKE_STATUS="passed"
+  else
+    POST_PUBLISH_SMOKE_STATUS="failed"
+    POST_PUBLISH_SMOKE_REASON="smoke script failed"
+    echo "❌ 发布后验证失败，已停止发布结果输出。" >&2
+    return 1
+  fi
 }
 
 # ── 参数检查 ──────────────────────────────────────────────
@@ -310,6 +372,15 @@ if [[ -z "$SCRIPT_URL" ]]; then
 fi
 echo "   ✅ ${SCRIPT_URL}"
 
+POST_PUBLISH_SMOKE=""
+if [[ "$RUN_POST_PUBLISH_SMOKE" == "1" ]]; then
+  POST_PUBLISH_SMOKE="$(find_post_publish_smoke || true)"
+  run_post_publish_smoke "$POST_PUBLISH_SMOKE"
+else
+  POST_PUBLISH_SMOKE_STATUS="disabled"
+  POST_PUBLISH_SMOKE_REASON="RUN_POST_PUBLISH_SMOKE=${RUN_POST_PUBLISH_SMOKE}"
+fi
+
 # ── 生成文档页 ────────────────────────────────────────────
 SKILL_MD=""
 [[ -f "${SKILL_DIR}/SKILL.md" ]] && SKILL_MD=$(cat "${SKILL_DIR}/SKILL.md")
@@ -345,6 +416,50 @@ PYEOF
 )
 DOC_URL=$(echo "$DOC_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('page_url',''))" 2>/dev/null || true)
 
+# ── 上传 latest manifest，供页面/agent 读取发布状态 ───────
+MANIFEST_FILENAME="${SKILL_NAME}-latest.json"
+MANIFEST_PATH="${TMPDIR_WORK}/${MANIFEST_FILENAME}"
+python3 - "$MANIFEST_PATH" <<PYEOF
+import json
+import sys
+from datetime import datetime, timezone
+
+manifest_path = sys.argv[1]
+payload = {
+  "skill": "${SKILL_NAME}",
+  "published_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+  "version": "${TS}",
+  "install_command": "bash <(curl -fsSL ${SCRIPT_URL})",
+  "script_url": "${SCRIPT_URL}",
+  "zip_url": "${ZIP_URL}",
+  "zip_file": "${ZIP_FILENAME}",
+  "doc_url": "${DOC_URL}",
+  "post_publish_smoke": {
+    "status": "${POST_PUBLISH_SMOKE_STATUS}",
+    "script": "${POST_PUBLISH_SMOKE_SCRIPT}",
+    "reason": "${POST_PUBLISH_SMOKE_REASON}"
+  }
+}
+with open(manifest_path, "w", encoding="utf-8") as f:
+  json.dump(payload, f, ensure_ascii=False, indent=2)
+  f.write("\\n")
+PYEOF
+
+echo "📤 上传 latest manifest..."
+MANIFEST_UPLOAD=$(curl -s --location "${FILE_API_URL}" \
+  --header "Authorization: Bearer ${FILE_API_TOKEN}" \
+  --form "file=@${MANIFEST_PATH};type=application/json" \
+  --form "domain=${CDN_URL}" \
+  --form "name=${MANIFEST_FILENAME}")
+MANIFEST_URL=$(echo "$MANIFEST_UPLOAD" | python3 -c "import sys,json; print(json.load(sys.stdin).get('image_url',''))" 2>/dev/null || true)
+if [[ -n "$MANIFEST_URL" ]]; then
+  MANIFEST_UPLOAD_STATUS="uploaded"
+  echo "   ✅ ${MANIFEST_URL}"
+else
+  MANIFEST_UPLOAD_STATUS="failed"
+  echo "⚠️  latest manifest 上传失败: ${MANIFEST_UPLOAD}" >&2
+fi
+
 # ── 本地备份 ──────────────────────────────────────────────
 LOCAL_OUT="${HOME}/.codex/skills/.system/published/${INSTALL_FILENAME}"
 mkdir -p "$(dirname "$LOCAL_OUT")"
@@ -357,6 +472,8 @@ echo "✅ Skill 发布成功！"
 echo ""
 echo "📦 Skill:   ${SKILL_NAME}"
 echo "🗜  包文件:  ${ZIP_URL}"
+echo "🧪 发布后验证: ${POST_PUBLISH_SMOKE_STATUS}${POST_PUBLISH_SMOKE_SCRIPT:+ (${POST_PUBLISH_SMOKE_SCRIPT})}${POST_PUBLISH_SMOKE_REASON:+ — ${POST_PUBLISH_SMOKE_REASON}}"
+echo "🧾 latest manifest: ${MANIFEST_UPLOAD_STATUS}${MANIFEST_URL:+ (${MANIFEST_URL})}"
 echo ""
 echo "🚀 一键安装命令："
 echo ""
@@ -376,6 +493,13 @@ print('PUBLISH_RESULT_JSON=' + json.dumps({
   'script_url': '${SCRIPT_URL}',
   'zip_url': '${ZIP_URL}',
   'doc_url': '${DOC_URL}',
-  'local_backup': '${LOCAL_OUT}'
+  'manifest_url': '${MANIFEST_URL}',
+  'manifest_status': '${MANIFEST_UPLOAD_STATUS}',
+  'local_backup': '${LOCAL_OUT}',
+  'post_publish_smoke': {
+    'status': '${POST_PUBLISH_SMOKE_STATUS}',
+    'script': '${POST_PUBLISH_SMOKE_SCRIPT}',
+    'reason': '${POST_PUBLISH_SMOKE_REASON}'
+  }
 }))
 "

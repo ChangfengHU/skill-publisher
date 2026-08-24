@@ -39,6 +39,14 @@ Before enabling Qwen/DashScope, run `scripts/tts-credential-check.mjs`. If no us
 bash <skill-dir>/scripts/install-wizard.sh --skill-dir=<skill-dir> --project-dir=<video-project> --configure-tts
 ```
 
+After configuration, use the status command to verify effective runtime settings:
+
+```bash
+bash <skill-dir>/scripts/install-wizard.sh --skill-dir=<skill-dir> --project-dir=<video-project> --show-tts-status
+```
+
+Treat `DASHSCOPE_TTS_ACCESS_STATUS=skipped` as a local install/test state only. It proves the key was stored and the provider was selected; it does not prove the DashScope account can generate audio.
+
 ## Voice Direction
 
 Match the voice to the topic:

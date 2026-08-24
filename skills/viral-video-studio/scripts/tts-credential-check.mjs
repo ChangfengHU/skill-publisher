@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 const args = parseArgs(process.argv.slice(2));
 const projectDir = path.resolve(args['project-dir'] || args.projectDir || process.cwd());
@@ -22,9 +23,13 @@ const candidateKeyFiles = [...new Set([
 ].filter(Boolean))];
 
 const envKeyUsable = isUsableKey(env.DASHSCOPE_API_KEY || '');
+const envKeySummary = envKeyUsable ? buildKeySummary(env.DASHSCOPE_API_KEY) : null;
 const fileChecks = candidateKeyFiles.map((filePath) => checkKeyFile(filePath));
 const usableFile = fileChecks.find((item) => item.usable);
-const qwenUsable = envKeyUsable || Boolean(usableFile);
+const keyAvailable = envKeyUsable || Boolean(usableFile);
+const accessStatus = normalizeAccessStatus(env.DASHSCOPE_TTS_ACCESS_STATUS || 'unknown');
+const accessBlocked = isAccessBlocked(accessStatus);
+const qwenUsable = keyAvailable && !accessBlocked;
 
 const result = {
   ok: true,
@@ -33,15 +38,18 @@ const result = {
   qwenTts: {
     requested: provider === 'qwen-tts',
     usable: qwenUsable,
+    keyAvailable,
+    accessBlocked,
     keySources: [
       envKeyUsable ? 'env:DASHSCOPE_API_KEY' : '',
       usableFile ? `file:${path.relative(projectDir, usableFile.path) || usableFile.path}` : ''
     ].filter(Boolean),
+    envKeySummary,
     configuredKeyFile: configuredKeyFile ? path.relative(projectDir, configuredKeyFile) || configuredKeyFile : '',
     defaultKeyFile: path.relative(projectDir, defaultKeyFile),
     model: env.DASHSCOPE_TTS_MODEL || 'qwen3-tts-flash',
     voice: env.DASHSCOPE_TTS_VOICE || 'Cherry',
-    accessStatus: env.DASHSCOPE_TTS_ACCESS_STATUS || 'unknown'
+    accessStatus
   },
   edgeTts: {
     usableWithoutAppKey: true,
@@ -54,22 +62,28 @@ const result = {
       path: path.relative(projectDir, item.path) || item.path,
       exists: item.exists,
       usable: item.usable,
-      mode: item.mode
+      mode: item.mode,
+      keyMask: item.keyMask || '',
+      keyFingerprint: item.keyFingerprint || '',
+      keyLength: item.keyLength || 0
     }))
   },
-  recommendations: buildRecommendations({ provider, qwenUsable, envKeyUsable, usableFile })
+  recommendations: buildRecommendations({ provider, qwenUsable, keyAvailable, accessStatus, accessBlocked, envKeyUsable, usableFile })
 };
 
 console.log(JSON.stringify(result, null, 2));
 
-function buildRecommendations({ provider, qwenUsable, envKeyUsable, usableFile }) {
+function buildRecommendations({ provider, qwenUsable, keyAvailable, accessStatus, accessBlocked, envKeyUsable, usableFile }) {
   const items = [];
   if (provider !== 'qwen-tts') {
     items.push('Default edge-tts can run without an app key.');
   }
-  if (provider === 'qwen-tts' && !qwenUsable) {
+  if (provider === 'qwen-tts' && !keyAvailable) {
     items.push('Ask the user for a DashScope API key or a local key-file path before rendering with Qwen TTS.');
     items.push('Use configure-dashscope-tts.mjs to persist the key only after user approval.');
+  }
+  if (keyAvailable && accessBlocked) {
+    items.push(`DashScope key is stored, but TTS access is ${accessStatus}; keep edge-tts active until the Bailian model permission is opened and the wizard is rerun.`);
   }
   if (qwenUsable && provider !== 'qwen-tts') {
     items.push('DashScope key is available; set CONTENT_TTS_PROVIDER=qwen-tts if the user wants Qwen TTS.');
@@ -90,11 +104,15 @@ function checkKeyFile(filePath) {
   try {
     const stat = fs.statSync(filePath);
     const text = fs.readFileSync(filePath, 'utf8').trim();
+    const summary = buildKeySummary(text);
     return {
       path: filePath,
       exists: true,
       usable: isUsableKey(text),
-      mode: `0${(stat.mode & 0o777).toString(8)}`
+      mode: `0${(stat.mode & 0o777).toString(8)}`,
+      keyMask: summary?.keyMask || '',
+      keyFingerprint: summary?.keyFingerprint || '',
+      keyLength: summary?.keyLength || 0
     };
   } catch {
     return { path: filePath, exists: false, usable: false, mode: '' };
@@ -136,11 +154,42 @@ function isUsableKey(value = '') {
   return key.length >= 20 && !/PASTE_|YOUR_|这里|占位|placeholder/i.test(key);
 }
 
+function buildKeySummary(value = '') {
+  const key = String(value || '').trim();
+  if (!isUsableKey(key)) return null;
+  return {
+    keyMask: maskKey(key),
+    keyFingerprint: crypto.createHash('sha256').update(key).digest('hex').slice(0, 12),
+    keyLength: key.length
+  };
+}
+
+function maskKey(key = '') {
+  const text = String(key || '');
+  if (!text) return '';
+  const prefix = text.startsWith('sk-') ? 'sk-' : text.slice(0, 3);
+  const suffix = text.length > prefix.length + 4 ? text.slice(-4) : '';
+  let middleLength = text.length - prefix.length - suffix.length;
+  middleLength = Math.max(6, Math.min(18, middleLength));
+  return `${prefix}${'*'.repeat(middleLength)}${suffix}`;
+}
+
 function normalizeProvider(provider = '') {
   const value = String(provider || '').trim().toLowerCase();
   if (value === 'qwen' || value === 'dashscope' || value === 'qwen-tts') return 'qwen-tts';
   if (value === 'cosyvoice' || value === 'cosy-voice') return 'cosyvoice';
   return 'edge-tts';
+}
+
+function normalizeAccessStatus(status = '') {
+  const value = String(status || '').trim().toLowerCase();
+  if (!value) return 'unknown';
+  if (value === 'model.accessdenied' || value === 'accessdenied') return 'denied';
+  return value;
+}
+
+function isAccessBlocked(status = '') {
+  return ['denied', 'failed', 'invalid', 'invalid-api-key', 'rate_limited', 'ratelimited'].includes(normalizeAccessStatus(status));
 }
 
 function parseArgs(argv) {

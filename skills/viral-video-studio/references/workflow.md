@@ -213,8 +213,33 @@ Return:
   "passed": [],
   "issues": [],
   "rollbackStage": "topic-inspiration|topic-radar|angle-designer|creative-director|script-master|audio-director|asset-director|template-workshop|video-render",
-  "nextActions": []
+  "nextActions": [],
+  "videoRubricAudit": {
+    "version": "video-rubric-audit-v1",
+    "status": "pass|wait|reject",
+    "score": 0,
+    "target": 90,
+    "nextStage": "asset-director",
+    "nextStageLabel": "素材生成",
+    "summary": "当前分数、主要风险、下一步回退阶段",
+    "items": [
+      {
+        "key": "topic-native-visuals",
+        "label": "话题原生画面",
+        "weight": 20,
+        "score": 0,
+        "status": "pass|wait|reject",
+        "stage": "asset-director",
+        "stageLabel": "素材生成",
+        "reason": "为什么过/不过",
+        "nextCheck": "下一轮如何验收",
+        "failedGates": []
+      }
+    ],
+    "topRisks": []
+  }
 }
 ```
 
 Use `WAIT` when the video is promising but needs targeted repair. Use `REJECT` when the topic, thesis, or style direction is fundamentally wrong.
+The evaluator must expose all seven rubric dimensions from `quality-gates.md`, not only a final score. The page should be able to show this object directly and route a repair run to `rollbackStage`.

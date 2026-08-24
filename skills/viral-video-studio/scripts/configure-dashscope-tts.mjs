@@ -40,7 +40,7 @@ const updates = {
   DASHSCOPE_TTS_MODEL: model,
   DASHSCOPE_TTS_VOICE: voice,
   DASHSCOPE_TTS_LANGUAGE: language,
-  DASHSCOPE_TTS_ACCESS_STATUS: verification.ok ? 'verified' : verification.status,
+  DASHSCOPE_TTS_ACCESS_STATUS: verification.status === 'skipped' ? 'skipped' : verification.ok ? 'verified' : verification.status,
   CONTENT_TTS_SCENE_CHUNKS: '1',
   CONTENT_TTS_SCENE_PAUSE_SECONDS: '0.12'
 };
