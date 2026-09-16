@@ -196,6 +196,26 @@ echo ""
 INSTALL_FILENAME="install-${SKILL_NAME}.sh"
 INSTALL_SCRIPT="${TMPDIR_WORK}/${INSTALL_FILENAME}"
 
+# A plugin root carries the Codex manifest and its MCP declaration. Keep the
+# detection local to publishing so no plugin-specific behavior leaks into
+# ordinary Skill installers.
+PLUGIN_MODE=0
+PLUGIN_REPO=""
+PLUGIN_ID="${SKILL_NAME}"
+if [[ -f "${SKILL_DIR}/.codex-plugin/plugin.json" && -f "${SKILL_DIR}/.mcp.json" ]]; then
+  PLUGIN_MODE=1
+  PLUGIN_REPO="${PLUGIN_REPO:-${GITHUB_REPO:-}}"
+  if [[ -z "${PLUGIN_REPO}" && -d "${SKILL_DIR}/.git" ]]; then
+    PLUGIN_REPO="$(git -C "${SKILL_DIR}" remote get-url origin 2>/dev/null || true)"
+    PLUGIN_REPO="${PLUGIN_REPO%.git}"
+    PLUGIN_REPO="${PLUGIN_REPO#https://github.com/}"
+    PLUGIN_REPO="${PLUGIN_REPO#git@github.com:}"
+  fi
+  if [[ -z "${PLUGIN_REPO}" ]]; then
+    echo "⚠️ 检测到 Codex 插件，但未设置 PLUGIN_REPO；将发布包但不生成自动 marketplace 安装。" >&2
+  fi
+fi
+
 cat > "$INSTALL_SCRIPT" << SCRIPT_EOF
 #!/usr/bin/env bash
 # Auto-generated one-click install script for: ${SKILL_NAME}
@@ -205,6 +225,13 @@ set -euo pipefail
 SKILL_NAME="${SKILL_NAME}"
 ZIP_URL="${ZIP_URL}"
 ZIP_SHA256="${ZIP_SHA256}"
+
+# Plugin metadata is optional. When the published package is a Codex plugin,
+# the installer also runs the plugin marketplace install and wires its declared
+# MCPs through the local Vault auth bridge. Ordinary Skills keep the legacy path.
+PLUGIN_MODE="${PLUGIN_MODE:-0}"
+PLUGIN_REPO="${PLUGIN_REPO:-}"
+PLUGIN_ID="${PLUGIN_ID:-${SKILL_NAME}}"
 
 # ── 工具选择 ──────────────────────────────────────────────
 TARGET="\${1:-}"
@@ -317,6 +344,39 @@ for BASE_DIR in "\${DIRS[@]}"; do
   find "\$DEST/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
   echo "  ✅ → \$DEST"
 done
+
+if [[ "\$PLUGIN_MODE" == "1" && "\$TARGET" == "codex" ]]; then
+  if [[ -z "\$PLUGIN_REPO" ]]; then
+    echo "❌ 插件缺少 PLUGIN_REPO，停止自动接入" >&2
+    exit 1
+  fi
+  echo "🔌 安装 Codex 插件：\$PLUGIN_ID"
+  codex plugin marketplace add "\$PLUGIN_REPO"
+  codex plugin add "\$PLUGIN_ID@personal"
+  AUTH_HELPER="\${VYIBC_MCP_AUTH_HELPER:-\$HOME/.codex/bin/vyibc-mcp-auth}"
+  if [[ ! -x "\$AUTH_HELPER" ]]; then
+    echo "⚠️ 未找到 Vault 认证桥：\$AUTH_HELPER"
+    echo "   插件已安装，但 MCP 尚未自动接入。"
+  else
+    echo "🔐 MCP 将通过 Vault 认证桥按需取短期凭据，不写入永久 Token。"
+    MCP_JSON="\$EXTRACTED_DIR/.mcp.json"
+    if [[ -f "\$MCP_JSON" && "\$(command -v jq || true)" ]]; then
+      while IFS=$'\t' read -r MCP_ID MCP_URL; do
+        [[ -n "\$MCP_ID" && -n "\$MCP_URL" ]] || continue
+        case "\$MCP_ID" in
+          vyibc-cartoon-assets|vyibc-youtube) TOKEN_SOURCE="\$MCP_ID" ;;
+          *) TOKEN_SOURCE="fleet" ;;
+        esac
+        codex mcp remove "\$MCP_ID" >/dev/null 2>&1 || true
+        codex mcp add "\$MCP_ID" -- "\$AUTH_HELPER" "\$MCP_URL" "\$TOKEN_SOURCE"
+        echo "   ✅ MCP 接入：\$MCP_ID"
+      done < <(jq -r '.mcpServers // {} | to_entries[] | [.key,.value.url] | @tsv' "\$MCP_JSON")
+    else
+      echo "⚠️ 缺少 jq 或插件 MCP 声明，跳过自动 MCP 接入。"
+    fi
+    echo "   请重新加载 Codex 会话以发现插件声明的 MCP 工具。"
+  fi
+fi
 
 echo ""
 echo "✅ 安装完成！对 AI 说触发词即可使用 \${SKILL_NAME}。"
