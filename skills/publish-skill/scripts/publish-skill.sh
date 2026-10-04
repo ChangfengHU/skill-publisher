@@ -122,7 +122,7 @@ echo ""
 TMPDIR_WORK=$(mktemp -d /tmp/publish-skill-XXXXXX)
 trap 'rm -rf "$TMPDIR_WORK"' EXIT
 
-TS=$(date +%Y%m%d%H%M%S)
+TS=$(date -u +%Y%m%d%H%M%S)
 ZIP_FILENAME="${SKILL_NAME}-${TS}.zip"
 ZIP_PATH="${TMPDIR_WORK}/${ZIP_FILENAME}"
 PACKAGE_ROOT="${TMPDIR_WORK}/package"
@@ -404,22 +404,29 @@ echo "   ✅ ${SCRIPT_URL}"
 SKILL_MD=""
 [[ -f "${SKILL_DIR}/SKILL.md" ]] && SKILL_MD=$(cat "${SKILL_DIR}/SKILL.md")
 
-DOC_RESP=$(python3 - <<PYEOF
-import json, urllib.request, sys
+export PUBLISH_DOC_SKILL_DIR="$SKILL_DIR" PUBLISH_DOC_SKILL_NAME="$SKILL_NAME" PUBLISH_DOC_SCRIPT_URL="$SCRIPT_URL" PUBLISH_DOC_TS="$TS"
+DOC_RESP=$(python3 - <<'PYEOF'
+import json, urllib.request, sys, os
+from pathlib import Path
+name = os.environ['PUBLISH_DOC_SKILL_NAME']
+script = os.environ['PUBLISH_DOC_SCRIPT_URL']
+stamp = os.environ['PUBLISH_DOC_TS']
+md_path = Path(os.environ['PUBLISH_DOC_SKILL_DIR']) / 'SKILL.md'
+skill_md = md_path.read_text() if md_path.is_file() else ''
 
-content = """# ${SKILL_NAME} — 一键安装
+content = f"""# {name} — 一键安装
 
 ## 安装命令
 
-\`\`\`bash
-bash <(curl -fsSL ${SCRIPT_URL})
-\`\`\`
+```bash
+bash <(curl -fsSL '{script}?ts={stamp}')
+```
 
 ---
 
-${SKILL_MD}"""
+{skill_md}"""
 
-body = json.dumps({"content": content, "title": "Install: ${SKILL_NAME}"}).encode()
+body = json.dumps({"content": content, "title": "Install: " + name}).encode()
 req = urllib.request.Request(
     "https://upload.vyibc.com/v1beta/documents:toPage",
     data=body,
@@ -458,16 +465,39 @@ echo "💾 本地备份: ${LOCAL_OUT}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
+# Publishing a Skill registers the exact same archive used by its installer.
+# Plugin-mode installers are a different artifact type and are not Skill sources.
+HUB_SYNC_JSON='{"status":"not_applicable"}'
+HUB_SYNC_FAILED=0
+if [[ "$PLUGIN_MODE" == "0" ]]; then
+  HUB_SOURCE_JSON=$(python3 -c 'import json,sys; print(json.dumps(dict(zip(["skill","script_url","zip_url","zip_sha256","published_at"],sys.argv[1:]))))' "$SKILL_NAME" "$SCRIPT_URL" "$ZIP_URL" "$ZIP_SHA256" "$TS")
+  HUB_SYNC_TOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/register-hub-source.py"
+  if [[ -f "$HUB_SYNC_TOOL" ]]; then
+    HUB_SYNC_JSON=$(printf '%s' "$HUB_SOURCE_JSON" | python3 "$HUB_SYNC_TOOL") || HUB_SYNC_FAILED=1
+  else
+    HUB_SYNC_JSON='{"status":"failed","error":"hub_sync_tool_missing"}'
+    HUB_SYNC_FAILED=1
+  fi
+fi
+export HUB_SYNC_JSON
+
 # 机器可读输出（供 agent 解析）
 python3 -c "
-import json
+import json, os
 print('PUBLISH_RESULT_JSON=' + json.dumps({
   'skill': '${SKILL_NAME}',
   'install_command': \"bash <(curl -fsSL '${SCRIPT_URL}?ts=${TS}')\",
   'script_url': '${SCRIPT_URL}',
   'zip_url': '${ZIP_URL}',
+  'zip_sha256': '${ZIP_SHA256}',
+  'published_at': '${TS}',
+  'hub_sync': json.loads(os.environ['HUB_SYNC_JSON']),
   'contract_path': 'sop-skill-contract.json',
   'doc_url': '${DOC_URL}',
   'local_backup': '${LOCAL_OUT}'
 }))
 "
+if [[ "$HUB_SYNC_FAILED" == "1" ]]; then
+  echo '⚠️ Skill 文件已发布，但能力广场同步未确认。修复授权后用 register-hub-source.py 重试登记；不要重复上传或误报全流程成功。' >&2
+  exit 2
+fi

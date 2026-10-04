@@ -34,7 +34,7 @@ publish my todo-helper skill
 📦 Skill: allocate-domain
 
 🚀 一键安装命令：
-bash <(curl -fsSL https://skill.vyibc.com/install-allocate-domain.sh)
+bash <(curl -fsSL 'https://skill.vyibc.com/install-allocate-domain.sh?ts=20261004000000')
 
 📄 文档页面（可分享给他人查看）：
 https://skill.vyibc.com/abc123.html
@@ -53,7 +53,8 @@ https://skill.vyibc.com/abc123.html
 3. 打包成 zip 文件并上传到 skill.vyibc.com
 4. 生成安装脚本（下载 zip -> 解压 -> 安装到目标工具）并上传
 5. 调用 documents:toPage 生成可分享的文档页
-6. 返回 bash <(curl -fsSL https://skill.vyibc.com/install-my-skill.sh) 命令
+6. 用现有宿主凭据向 Fleet 登记该 ZIP 的地址、SHA-256 和 UTC 时间戳
+7. 返回带 ?ts=YYYYMMDDHHMMSS 的安装命令，以及 hub_sync 结果
 ```
 
 ## SOP Skill Contract
@@ -77,6 +78,25 @@ SOP Node Builder / A2A Runtime 的旁路元数据，普通 agent 可以忽略它
 - `python3`
 - `curl`
 - 网络连接
+
+## Fleet 单一来源与插件更新
+
+Skill 内容只维护发布目录，不再在插件页面另写 SKILL.md。插件的 Skill
+来自同一个安装脚本指向的 ZIP，包括 scripts、references 和资源文件。
+
+- 发布后安装命令和文档都带 UTC 时间戳；Fleet 登记成功才算同步完成。
+- 登记使用 `FLEET_HUB_TOKEN`，或 `FLEET_HUB_TOKEN_FILE` 指向的私有文件；
+  默认复用宿主 `~/.boss/token`（必须 0600）。不把凭据写进 Skill/安装命令。
+- 插件页面依次 **刷新 Skill → 查看内容差异 → 生成版本 → 更新到 ChatGPT**。
+  刷新只下载并校验 ZIP，不执行远程 Bash。只有内容变化才允许生成版本，
+  时间戳和 ZIP 打包元数据变化不算新内容。旧插件版本不被原地修改。
+- `PUBLISH_RESULT_JSON.hub_sync.status=registered` 才表示 Fleet 已接收。
+  文件上传成功但登记失败时脚本退出 2，保留已上传产物；把结果中的
+  skill/script_url/zip_url/zip_sha256/published_at 五个字段作为 JSON，交给
+  `scripts/register-hub-source.py` 的 stdin 重试，不重复上传。
+- `FLEET_HUB_SYNC=0` 仅用于明确不接入 Fleet 的发布，结果会标记 disabled。
+- ChatGPT 官方更新接口不能删除旧文件。Fleet 展示删除差异但阻止上传；
+  不使用改名/新建副本绕过既有身份和授权。
 
 ## 路径限制
 
