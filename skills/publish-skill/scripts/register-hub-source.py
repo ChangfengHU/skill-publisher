@@ -34,6 +34,7 @@ def register(source):
             token = path.read_text().strip()
     if not token:
         return {'status': 'failed', 'error': 'hub_credential_not_configured'}
+    source = {key: source[key] for key in ('skill','script_url','zip_url','zip_sha256','published_at') if key in source}
     request = urllib.request.Request(endpoint, data=json.dumps(source).encode(), headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'User-Agent': 'Vyibc-Fleet-Skill-Publisher/1.0', 'Accept': 'application/json'}, method='POST')
     try:
         with urllib.request.build_opener(NoRedirect()).open(request, timeout=40) as response:

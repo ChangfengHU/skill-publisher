@@ -104,3 +104,19 @@ Skill 内容只维护发布目录，不再在插件页面另写 SKILL.md。插�
 - 如果手动传入第二个参数，路径也必须落在这些目录内
 - 只有显式设置 `ALLOW_EXTERNAL_SKILL_DIR=1` 时，才允许从仓库目录等外部路径发布
 - **特殊优化**：当用户明确提到“项目远程发布skill”时，通常是指发布当前项目（仓库）中的某个 skill。此时应当自动设置 `ALLOW_EXTERNAL_SKILL_DIR=1`，并根据用户提到的 skill 名称在当前项目的 `skills/` 目录下查找路径。
+
+## Harness 发布回执
+
+发布脚本还会把同一份 ZIP 和不可变安装脚本登记到 Harness。以
+`PUBLISH_RESULT_JSON.harness_sync.status=registered` 为确认依据；Fleet
+和 Harness 分别返回回执，不互相替代。Harness 的页面和安装使用返回的
+一行 Bash 命令，源码文件树读取同一个校验过的 ZIP。Git 仅是上游来源，
+不能把内部 Git checkout 脚本称为发布器生成的安装命令。
+
+第一次发布插件内 Skill 时，从已登记的同一仓库、提交和相对目录发布，
+保持 Skill ID。`source_git` 由脚本从目录自动提取并写入机器结果，重试时
+保留完整结果。登记失败时使用 `register-harness-release.py` 的 stdin 重试，
+不重复打包和上传。`HARNESS_SKILL_SYNC=0` 是明确不登记 Harness 的选择。
+
+真实验收应在明确的隔离 `SKILL_INSTALL_DIR` 中执行已生成安装脚本，
+核对文件、SHA256 和目标参数；不以 Bash 语法检查代替安装验收。

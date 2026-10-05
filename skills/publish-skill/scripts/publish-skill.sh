@@ -12,9 +12,10 @@ set -euo pipefail
 
 SKILL_NAME="${1:-}"
 FILE_API_URL="${FILE_API_URL:-https://upload-r2.vyibc.com}"
-FILE_API_TOKEN="${FILE_API_TOKEN:-123456}"
+FILE_API_TOKEN="${FILE_API_TOKEN:-}"
 CDN_URL="${CDN_URL:-https://skill.vyibc.com}"
-RELEASE_PATH="${RELEASE_PATH:-${SKILL_NAME}/release}"
+RELEASE_PATH="${RELEASE_PATH:-}"
+export FILE_API_URL FILE_API_TOKEN CDN_URL
 ALLOW_EXTERNAL_SKILL_DIR="${ALLOW_EXTERNAL_SKILL_DIR:-0}"
 GENERATE_SOP_CONTRACT="${GENERATE_SOP_CONTRACT:-1}"
 PRESERVE_SOP_CONTRACT="${PRESERVE_SOP_CONTRACT:-1}"
@@ -66,6 +67,11 @@ if [[ -z "$SKILL_NAME" ]]; then
   exit 1
 fi
 
+if [[ ! "$SKILL_NAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$ ]]; then
+  echo "❌ 无效 skill 名称" >&2; exit 1
+fi
+UPLOAD_TOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/upload-skill-file.py"
+
 # ── 查找 skill 目录 ───────────────────────────────────────
 SKILL_DIR="${2:-}"
 if [[ -z "$SKILL_DIR" ]]; then
@@ -115,6 +121,7 @@ if ! is_allowed_skill_dir "$SKILL_DIR"; then
   echo "⚠️  使用外部 skill 目录发布: ${SKILL_DIR}" >&2
 fi
 
+[[ -s "$SKILL_DIR/SKILL.md" || -f "$SKILL_DIR/.codex-plugin/plugin.json" ]] || { echo "❌ SKILL.md 缺失" >&2; exit 1; }
 echo "📦 打包 skill: ${SKILL_NAME}"
 echo "   来源目录: ${SKILL_DIR}"
 echo ""
@@ -130,7 +137,10 @@ PACKAGE_SKILL_DIR="${PACKAGE_ROOT}/${SKILL_NAME}"
 CONTRACT_PATH="${PACKAGE_SKILL_DIR}/sop-skill-contract.json"
 
 mkdir -p "$PACKAGE_ROOT"
-cp -R "$SKILL_DIR" "$PACKAGE_SKILL_DIR"
+python3 - "$SKILL_DIR" "$PACKAGE_SKILL_DIR" <<'COPYEOF'
+import shutil,sys
+shutil.copytree(sys.argv[1],sys.argv[2],ignore=shutil.ignore_patterns('.git','__pycache__','*.pyc','.DS_Store','.env'))
+COPYEOF
 
 if [[ -f "$CONTRACT_PATH" && "$PRESERVE_SOP_CONTRACT" == "1" ]]; then
   echo "🧾 使用 Skill 自带的 reviewed SOP Skill Contract..."
@@ -175,15 +185,12 @@ ZIP_SHA256="$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv
 echo "   🔐 SHA-256: ${ZIP_SHA256}"
 echo ""
 
+RELEASE_PATH="${RELEASE_PATH:-${SKILL_NAME}/releases/${TS}-${ZIP_SHA256:0:16}}"
+
 # ── 上传 zip ──────────────────────────────────────────────
 echo "📤 上传 zip..."
-ZIP_UPLOAD=$(curl -s --location "${FILE_API_URL}" \
-  --header "Authorization: Bearer ${FILE_API_TOKEN}" \
-  --form "file=@${ZIP_PATH};type=text/plain" \
-  --form "domain=${CDN_URL}" \
-  --form "name=${ZIP_FILENAME}" \
-  --form "path=${RELEASE_PATH}")
-ZIP_URL=$(echo "$ZIP_UPLOAD" | python3 -c "import sys,json; print(json.load(sys.stdin).get('image_url',''))" 2>/dev/null || true)
+ZIP_UPLOAD=$(python3 "$UPLOAD_TOOL" "$ZIP_PATH" "$ZIP_FILENAME" "$RELEASE_PATH")
+ZIP_URL=$(printf '%s' "$ZIP_UPLOAD" | python3 -c 'import sys,json; print(json.load(sys.stdin)["url"])')
 
 if [[ -z "$ZIP_URL" ]]; then
   echo "❌ zip 上传失败: $ZIP_UPLOAD" >&2
@@ -288,6 +295,10 @@ case "\$TARGET" in
   *) echo "❌ 不支持的 target: \$TARGET"; exit 1 ;;
 esac
 
+if [[ -n "\${SKILL_INSTALL_DIR:-}" ]]; then
+  DIRS=("\$SKILL_INSTALL_DIR")
+fi
+
 echo ""
 echo "🚀 安装 \${SKILL_NAME} ..."
 echo ""
@@ -387,12 +398,11 @@ chmod +x "$INSTALL_SCRIPT"
 
 # ── 上传安装脚本 ──────────────────────────────────────────
 echo "📤 上传安装脚本..."
-SCRIPT_UPLOAD=$(curl -s --location "${FILE_API_URL}" \
-  --header "Authorization: Bearer ${FILE_API_TOKEN}" \
-  --form "file=@${INSTALL_SCRIPT};type=text/plain" \
-  --form "domain=${CDN_URL}" \
-  --form "name=${INSTALL_FILENAME}")
-SCRIPT_URL=$(echo "$SCRIPT_UPLOAD" | python3 -c "import sys,json; print(json.load(sys.stdin).get('image_url',''))" 2>/dev/null || true)
+SCRIPT_UPLOAD=$(python3 "$UPLOAD_TOOL" "$INSTALL_SCRIPT" "$INSTALL_FILENAME" "$RELEASE_PATH")
+SCRIPT_URL=$(printf '%s' "$SCRIPT_UPLOAD" | python3 -c 'import sys,json; print(json.load(sys.stdin)["url"])')
+# Keep the historical convenience URL; release receipts always use the immutable path.
+LATEST_SCRIPT_UPLOAD=$(python3 "$UPLOAD_TOOL" "$INSTALL_SCRIPT" "$INSTALL_FILENAME" "")
+LATEST_SCRIPT_URL=$(printf '%s' "$LATEST_SCRIPT_UPLOAD" | python3 -c 'import sys,json; print(json.load(sys.stdin)["url"])')
 
 if [[ -z "$SCRIPT_URL" ]]; then
   echo "❌ 安装脚本上传失败: $SCRIPT_UPLOAD" >&2
@@ -427,8 +437,10 @@ bash <(curl -fsSL '{script}?ts={stamp}')
 {skill_md}"""
 
 body = json.dumps({"content": content, "title": "Install: " + name}).encode()
+if not os.environ.get("PUBLISH_DOC_URL", "default"):
+    print("{}"); sys.exit(0)
 req = urllib.request.Request(
-    "https://upload.vyibc.com/v1beta/documents:toPage",
+    os.environ.get("PUBLISH_DOC_URL", "https://upload.vyibc.com/v1beta/documents:toPage"),
     data=body,
     headers={"Content-Type": "application/json"},
     method="POST"
@@ -443,7 +455,7 @@ PYEOF
 DOC_URL=$(echo "$DOC_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('page_url',''))" 2>/dev/null || true)
 
 # ── 本地备份 ──────────────────────────────────────────────
-LOCAL_OUT="${HOME}/.codex/skills/.system/published/${INSTALL_FILENAME}"
+LOCAL_OUT="${PUBLISH_BACKUP_DIR:-${HOME}/.codex/skills/.system/published}/${INSTALL_FILENAME}"
 mkdir -p "$(dirname "$LOCAL_OUT")"
 cp "$INSTALL_SCRIPT" "$LOCAL_OUT"
 
@@ -467,6 +479,11 @@ echo ""
 
 # Publishing a Skill registers the exact same archive used by its installer.
 # Plugin-mode installers are a different artifact type and are not Skill sources.
+PUBLISH_SOURCE_METADATA_JSON='{}'
+if [[ "$PLUGIN_MODE" == "0" ]]; then
+  PUBLISH_SOURCE_METADATA_JSON=$(python3 "$(dirname "${BASH_SOURCE[0]}")/register-harness-release.py" --source-metadata "$SKILL_DIR")
+fi
+export PUBLISH_SOURCE_METADATA_JSON
 HUB_SYNC_JSON='{"status":"not_applicable"}'
 HUB_SYNC_FAILED=0
 if [[ "$PLUGIN_MODE" == "0" ]]; then
@@ -479,7 +496,19 @@ if [[ "$PLUGIN_MODE" == "0" ]]; then
     HUB_SYNC_FAILED=1
   fi
 fi
-export HUB_SYNC_JSON
+HARNESS_SYNC_JSON='{"status":"not_applicable"}'
+HARNESS_SYNC_FAILED=0
+if [[ "$PLUGIN_MODE" == "0" ]]; then
+  HARNESS_SYNC_TOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/register-harness-release.py"
+  export PUBLISH_SKILL_SOURCE_DIR="$SKILL_DIR"
+  if [[ -f "$HARNESS_SYNC_TOOL" ]]; then
+    HARNESS_SYNC_JSON=$(printf '%s' "$HUB_SOURCE_JSON" | python3 "$HARNESS_SYNC_TOOL") || HARNESS_SYNC_FAILED=1
+  else
+    HARNESS_SYNC_JSON='{"status":"failed","error":"harness_sync_tool_missing"}'
+    HARNESS_SYNC_FAILED=1
+  fi
+fi
+export HUB_SYNC_JSON HARNESS_SYNC_JSON
 
 # 机器可读输出（供 agent 解析）
 python3 -c "
@@ -492,12 +521,15 @@ print('PUBLISH_RESULT_JSON=' + json.dumps({
   'zip_sha256': '${ZIP_SHA256}',
   'published_at': '${TS}',
   'hub_sync': json.loads(os.environ['HUB_SYNC_JSON']),
+  'harness_sync': json.loads(os.environ['HARNESS_SYNC_JSON']),
+  'latest_script_url': '${LATEST_SCRIPT_URL}',
   'contract_path': 'sop-skill-contract.json',
   'doc_url': '${DOC_URL}',
-  'local_backup': '${LOCAL_OUT}'
+  'local_backup': '${LOCAL_OUT}',
+  **json.loads(os.environ['PUBLISH_SOURCE_METADATA_JSON'])
 }))
 "
-if [[ "$HUB_SYNC_FAILED" == "1" ]]; then
-  echo '⚠️ Skill 文件已发布，但能力广场同步未确认。修复授权后用 register-hub-source.py 重试登记；不要重复上传或误报全流程成功。' >&2
+if [[ "$HUB_SYNC_FAILED" == "1" || "$HARNESS_SYNC_FAILED" == "1" ]]; then
+  echo '⚠️ Skill 文件已发布，但 Fleet 或 Harness 同步未确认。使用对应 register-*.py 重试登记；不要重复上传或误报全流程成功。' >&2
   exit 2
 fi
