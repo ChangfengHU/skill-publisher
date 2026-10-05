@@ -32,7 +32,7 @@ class PublishingTests(unittest.TestCase):
                 result=subprocess.run(['bash',str(SCRIPT),'example',str(source)],env=env,capture_output=True,text=True,timeout=45)
                 self.assertEqual(result.returncode,0,result.stderr)
                 receipt=json.loads(next(line.split('=',1)[1] for line in result.stdout.splitlines() if line.startswith('PUBLISH_RESULT_JSON=')))
-                self.assertIn('/example/releases/',receipt['script_url']);self.assertNotEqual(receipt['script_url'],receipt['latest_script_url']);self.assertNotIn('\n',receipt['install_command'])
+                self.assertIn('/example/releases/',receipt['script_url']);self.assertNotEqual(receipt['script_url'],receipt['latest_script_url']);self.assertNotIn('\n',receipt['install_command']);self.assertEqual(receipt['contract_path'],'')
                 script=artifacts[receipt['script_url'].split(f':{server.server_port}')[1]];installer=root/'install.sh';installer.write_bytes(script)
                 for target in ['codex','claude','agents','all']:
                     destination=root/target

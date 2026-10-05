@@ -462,7 +462,7 @@ cp "$INSTALL_SCRIPT" "$LOCAL_OUT"
 # ── 输出结果 ──────────────────────────────────────────────
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Skill 发布成功！"
+echo "✅ Skill 文件已上传"
 echo ""
 echo "📦 Skill:   ${SKILL_NAME}"
 echo "🗜  包文件:  ${ZIP_URL}"
@@ -509,6 +509,7 @@ if [[ "$PLUGIN_MODE" == "0" ]]; then
   fi
 fi
 export HUB_SYNC_JSON HARNESS_SYNC_JSON
+export PUBLISH_CONTRACT_PATH="$CONTRACT_PATH"
 
 # 机器可读输出（供 agent 解析）
 python3 -c "
@@ -523,7 +524,7 @@ print('PUBLISH_RESULT_JSON=' + json.dumps({
   'hub_sync': json.loads(os.environ['HUB_SYNC_JSON']),
   'harness_sync': json.loads(os.environ['HARNESS_SYNC_JSON']),
   'latest_script_url': '${LATEST_SCRIPT_URL}',
-  'contract_path': 'sop-skill-contract.json',
+  'contract_path': 'sop-skill-contract.json' if os.path.isfile(os.environ['PUBLISH_CONTRACT_PATH']) else '',
   'doc_url': '${DOC_URL}',
   'local_backup': '${LOCAL_OUT}',
   **json.loads(os.environ['PUBLISH_SOURCE_METADATA_JSON'])
@@ -533,3 +534,5 @@ if [[ "$HUB_SYNC_FAILED" == "1" || "$HARNESS_SYNC_FAILED" == "1" ]]; then
   echo '⚠️ Skill 文件已发布，但 Fleet 或 Harness 同步未确认。使用对应 register-*.py 重试登记；不要重复上传或误报全流程成功。' >&2
   exit 2
 fi
+
+echo "✅ 发布完成，已收到启用的登记回执。"
