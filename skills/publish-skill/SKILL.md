@@ -53,8 +53,8 @@ https://skill.vyibc.com/abc123.html
 3. 打包成 zip 文件并上传到 skill.vyibc.com
 4. 生成安装脚本（下载 zip -> 解压 -> 安装到目标工具）并上传
 5. 调用 documents:toPage 生成可分享的文档页
-6. 用现有宿主凭据向 Fleet 登记该 ZIP 的地址、SHA-256 和 UTC 时间戳
-7. 返回带 ?ts=YYYYMMDDHHMMSS 的安装命令，以及 hub_sync 结果
+6. 向 Fleet 提交完整发布定义和文件摘要，Fleet 固定版本并建立 Harness 分发任务
+7. 返回一行固定版本安装命令、Fleet release_id 和 distribution_id
 ```
 
 ## SOP Skill Contract
@@ -85,15 +85,21 @@ Skill 内容只维护发布目录，不再在插件页面另写 SKILL.md。插�
 来自同一个安装脚本指向的 ZIP，包括 scripts、references 和资源文件。
 
 - 发布后安装命令和文档都带 UTC 时间戳；Fleet 登记成功才算同步完成。
-- 登记使用 `FLEET_HUB_TOKEN`，或 `FLEET_HUB_TOKEN_FILE` 指向的私有文件；
-  默认复用宿主 `~/.boss/token`（必须 0600）。不把凭据写进 Skill/安装命令。
+- 统一发布使用 `FLEET_CAPABILITY_PUBLISH_TOKEN`，或
+  `FLEET_CAPABILITY_PUBLISH_TOKEN_FILE` 指向的私有文件；默认读取
+  `~/.boss/capability-publisher-token`（0600）。它对应 Fleet 的
+  `HUB_CAPABILITY_PUBLISH_TOKEN`，只用于能力发布。安装命令不包含凭据。
 - 插件页面依次 **刷新 Skill → 查看内容差异 → 生成版本 → 更新到 ChatGPT**。
-  刷新只下载并校验 ZIP，不执行远程 Bash。只有内容变化才允许生成版本，
-  时间戳和 ZIP 打包元数据变化不算新内容。旧插件版本不被原地修改。
-- `PUBLISH_RESULT_JSON.hub_sync.status=registered` 才表示 Fleet 已接收。
+  刷新只下载并校验 ZIP，不执行远程 Bash。内容差异按文件摘要判断，
+  时间戳和 ZIP 打包元数据变化不算新内容。Fleet 的统一发布可以显式创建
+  相同内容的新修订；ChatGPT 插件更新仍按其现有差异门禁。旧版本不被原地修改。
+- `PUBLISH_RESULT_JSON.hub_sync.status=published` 表示 Fleet 已固定版本并排队分发。
+  Harness 接收、Runtime 准备、会话绑定和实际使用分别看后续回执。
   文件上传成功但登记失败时脚本退出 2，保留已上传产物；把结果中的
-  skill/script_url/zip_url/zip_sha256/published_at 五个字段作为 JSON，交给
-  `scripts/register-hub-source.py` 的 stdin 重试，不重复上传。
+  skill/script_url/zip_url/zip_sha256/published_at 及 source_git 字段作为 JSON，交给
+  `scripts/register-fleet-capability.py /path/to/published.zip` 的 stdin 重试。
+  相同 publicationKey 返回同一版本和分发任务，不重复上传。
+  可用 `CAPABILITY_VERSION=1.2.3` 指定展示版本，默认 `0.0.0-<UTC时间戳>`。
 - `FLEET_HUB_SYNC=0` 仅用于明确不接入 Fleet 的发布，结果会标记 disabled。
 - ChatGPT 官方更新接口不能删除旧文件。Fleet 展示删除差异但阻止上传；
   不使用改名/新建副本绕过既有身份和授权。
@@ -107,16 +113,21 @@ Skill 内容只维护发布目录，不再在插件页面另写 SKILL.md。插�
 
 ## Harness 发布回执
 
-发布脚本还会把同一份 ZIP 和不可变安装脚本登记到 Harness。以
-`PUBLISH_RESULT_JSON.harness_sync.status=registered` 为确认依据；Fleet
-和 Harness 分别返回回执，不互相替代。Harness 的页面和安装使用返回的
+默认由 Fleet 分发同一份 ZIP 和不可变安装脚本到 Harness。
+`PUBLISH_RESULT_JSON.harness_sync.status=distributed_by_fleet` 表示分发责任，
+不是 Harness 已接收。通过 distribution_id 查看真实接收结果。Harness 的页面和安装使用返回的
 一行 Bash 命令，源码文件树读取同一个校验过的 ZIP。Git 仅是上游来源，
 不能把内部 Git checkout 脚本称为发布器生成的安装命令。
 
+旧接入端可显式设置 `FLEET_HUB_LEGACY_REGISTRATION=1` 使用旧 Fleet 登记，
+设置 `HARNESS_SKILL_COMPAT_DUAL_WRITE=1` 使用原 Harness 兼容双写。两个
+开关均默认关闭；只有兼容模式才读取原宿主 Token 和独立 Harness 回执。
+
 第一次发布插件内 Skill 时，从已登记的同一仓库、提交和相对目录发布，
 保持 Skill ID。`source_git` 由脚本从目录自动提取并写入机器结果，重试时
-保留完整结果。登记失败时使用 `register-harness-release.py` 的 stdin 重试，
-不重复打包和上传。`HARNESS_SKILL_SYNC=0` 是明确不登记 Harness 的选择。
+保留完整结果。登记失败时把结果交给
+`register-fleet-capability.py /path/to/published.zip` 的 stdin 重试，
+不重复打包和上传。旧双写兼容入口才使用 `register-harness-release.py`。
 
 真实验收应在明确的隔离 `SKILL_INSTALL_DIR` 中执行已生成安装脚本，
 核对文件、SHA256 和目标参数；不以 Bash 语法检查代替安装验收。

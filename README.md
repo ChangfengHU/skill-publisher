@@ -104,24 +104,23 @@ FILE_API_URL=http://your-server:1002 bash publish-skill.sh <skill-name>
 
 ## Harness Skill 互通
 
-默认发布流程同时登记 Fleet Hub 和 Harness：ZIP 上传 → 不可变版本安装脚本 → 最新便捷入口 → 校验并登记 Harness 的 Skill Registry、版本和能力目录。Harness 使用发布器返回的 `install_command`，例如：
+默认发布流程为 ZIP 上传 → 不可变安装脚本 → Fleet 完整发布定义 → Fleet 分发到 Harness。Harness 使用同一个固定版本和一行安装命令：
 
 ```bash
 bash <(curl -fsSL 'https://skill.vyibc.com/my-skill/releases/<release>/install-my-skill.sh') claude
 ```
 
-同一发布包支持 `codex`、`claude`、`agents`、`all` 等目标。`PUBLISH_RESULT_JSON.harness_sync.status=registered` 表示 Harness 已核验 ZIP SHA256、安装脚本与包的一致性并接收版本；上传完成本身不代表登记成功。
+`hub_sync.status=published` 表示 Fleet 已保存 release 和分发任务；`harness_sync.status=distributed_by_fleet` 表示交由 Fleet 分发，不能作为 Harness 已接收或 Runtime 已安装的证明。接收、环境准备、会话绑定和工具实际调用分别由后续回执展示。
 
-- `HARNESS_SKILL_SYNC=0`：明确仅发布文件，不接入 Harness。
-- `FLEET_HUB_SYNC=0`：明确不接入 Fleet；两项同步互相独立。
-- `FILE_API_TOKEN`：文件服务需要认证时从授权环境注入，不写入安装脚本或命令。
-- `SKILL_VERSION`：可选的发布版本名；默认使用 UTC 发布时间。
-- `SKILL_INSTALL_DIR`：安装时可选的明确目标目录，便于项目内安装和隔离验证。
-- 插件内单个 Skill 使用其真实目录发布；Git 仓库、提交和目录作为 `source_git` 保存在结果中。第一次替换 Harness 的 Git 条目时必须匹配已登记来源，保留原 Skill ID、插件关联和已有执行契约。
-- 自动生成的 `sop-skill-contract.json` 仍是包内旁路元数据，不会自动成为 Harness 已验收的 Node 执行契约。
-- 整个 Codex 插件包仍走现有插件安装流程，不把插件根目录冒充一个普通 Skill。
+- 发布凭据来自 `FLEET_CAPABILITY_PUBLISH_TOKEN` 或私有 `FLEET_CAPABILITY_PUBLISH_TOKEN_FILE`，默认 `~/.boss/capability-publisher-token`（0600）。服务端配置对应的 `HUB_CAPABILITY_PUBLISH_TOKEN`，不使用机主总令牌。
+- 完整定义含 ZIP 摘要、全部文件摘要、Git 来源和兼容声明；Fleet 分配修订、release ID 和 distribution ID。
+- `CAPABILITY_VERSION=1.2.3` 可指定展示版本；默认 `0.0.0-<UTC时间戳>`。
+- `FLEET_HUB_SYNC=0` 明确关闭 Fleet 登记。`FLEET_HUB_LEGACY_REGISTRATION=1` 保留旧五字段登记；`HARNESS_SKILL_COMPAT_DUAL_WRITE=1` 显式启用旧 Harness 直写，届时 `HARNESS_SKILL_SYNC=0` 可关闭直写。默认不双写两个定义源。
+- 发布结果及安装命令不包含凭据。同一发布包保留 codex、claude、agents、all 目标。
+- 原插件 Skill ID、Git 仓库、固定提交、相对路径必须保持一致；不匹配的旧条目会拒绝迁移，不覆盖来源或已有关联。
+- 整个插件包仍走其插件发布流程；不会把插件根目录冒充普通 Skill。
 
-上传成功但同步失败时退出码为 2。保存完整 `PUBLISH_RESULT_JSON`，修复问题后把它作为 stdin 交给对应 `register-harness-release.py` / `register-hub-source.py`。登记重试不会再次上传文件，不覆盖旧版本回执。最新入口用于便捷安装；Harness 记录的是不可变版本路径。
+上传成功但登记失败时退出 2，保存机器结果和 ZIP。把 skill/script_url/zip_url/zip_sha256/published_at/source_git 字段作为 JSON，交给 `register-fleet-capability.py /path/to/published.zip` 的 stdin 重试。相同 publicationKey 返回同一 release 和分发任务，不重复上传。旧兼容入口的重试仍使用各自脚本。
 
 本地验证：
 
@@ -129,5 +128,6 @@ bash <(curl -fsSL 'https://skill.vyibc.com/my-skill/releases/<release>/install-m
 bash -n skills/publish-skill/scripts/publish-skill.sh
 python3 skills/publish-skill/scripts/test-register-hub-source.py
 python3 skills/publish-skill/scripts/test-register-harness-release.py
+python3 skills/publish-skill/scripts/test-register-fleet-capability.py
 python3 skills/publish-skill/scripts/test-publish-install.py
 ```

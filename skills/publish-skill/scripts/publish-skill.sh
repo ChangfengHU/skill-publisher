@@ -488,6 +488,16 @@ HUB_SYNC_JSON='{"status":"not_applicable"}'
 HUB_SYNC_FAILED=0
 if [[ "$PLUGIN_MODE" == "0" ]]; then
   HUB_SOURCE_JSON=$(python3 -c 'import json,sys; print(json.dumps(dict(zip(["skill","script_url","zip_url","zip_sha256","published_at"],sys.argv[1:]))))' "$SKILL_NAME" "$SCRIPT_URL" "$ZIP_URL" "$ZIP_SHA256" "$TS")
+  HUB_SOURCE_JSON=$(printf '%s' "$HUB_SOURCE_JSON" | python3 -c 'import json,os,sys; v=json.load(sys.stdin);v.update(json.loads(os.environ["PUBLISH_SOURCE_METADATA_JSON"]));print(json.dumps(v))')
+  if [[ "${FLEET_HUB_LEGACY_REGISTRATION:-0}" != "1" ]]; then
+    HUB_SYNC_TOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/register-fleet-capability.py"
+    if [[ -f "$HUB_SYNC_TOOL" ]]; then
+      HUB_SYNC_JSON=$(printf '%s' "$HUB_SOURCE_JSON" | python3 "$HUB_SYNC_TOOL" "$ZIP_PATH") || HUB_SYNC_FAILED=1
+    else
+      HUB_SYNC_JSON='{"status":"failed","error":"fleet_publication_tool_missing"}'
+      HUB_SYNC_FAILED=1
+    fi
+  else
   HUB_SYNC_TOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/register-hub-source.py"
   if [[ -f "$HUB_SYNC_TOOL" ]]; then
     HUB_SYNC_JSON=$(printf '%s' "$HUB_SOURCE_JSON" | python3 "$HUB_SYNC_TOOL") || HUB_SYNC_FAILED=1
@@ -495,10 +505,14 @@ if [[ "$PLUGIN_MODE" == "0" ]]; then
     HUB_SYNC_JSON='{"status":"failed","error":"hub_sync_tool_missing"}'
     HUB_SYNC_FAILED=1
   fi
+  fi
 fi
 HARNESS_SYNC_JSON='{"status":"not_applicable"}'
+if [[ "$PLUGIN_MODE" == "0" && "${FLEET_HUB_LEGACY_REGISTRATION:-0}" != "1" && "${FLEET_HUB_SYNC:-1}" != "0" ]]; then
+  HARNESS_SYNC_JSON='{"status":"distributed_by_fleet"}'
+fi
 HARNESS_SYNC_FAILED=0
-if [[ "$PLUGIN_MODE" == "0" ]]; then
+if [[ "$PLUGIN_MODE" == "0" && "${HARNESS_SKILL_COMPAT_DUAL_WRITE:-0}" == "1" ]]; then
   HARNESS_SYNC_TOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/register-harness-release.py"
   export PUBLISH_SKILL_SOURCE_DIR="$SKILL_DIR"
   if [[ -f "$HARNESS_SYNC_TOOL" ]]; then
