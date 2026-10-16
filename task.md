@@ -12,3 +12,13 @@
 - **逻辑变化**: 
     - 识别到该触发词时，AI 应当在当前操作系统的 Workspace（即项目目录）下的 `skills/` 目录寻找指定的 skill。
     - 在运行 `publish-skill.sh` 时，自动前缀环境变量 `ALLOW_EXTERNAL_SKILL_DIR=1`。
+
+
+## 2026-10-16 independent cloud MCP and two-phase admission
+- [x] New authenticated publisher Worker, independent job DB and complete-text Skill publication; no automatic Hub/Harness call.
+- [x] Existing local CLI/source workspace preserved.
+- [x] Native MCP phase-one publication; new directory entries absent at phase boundary.
+- [x] Native Hub MCP-only registration of new service, new cloud Skill and composed suite.
+- [x] Native complete package loading, retained official install twice and persistent private MCP configuration readback.
+- [x] Five local tests, actual cloud publication and consumer byte verification.
+Evidence: mcp/ACCEPTANCE.md.

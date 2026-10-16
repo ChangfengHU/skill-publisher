@@ -13,5 +13,11 @@
       "database_name": "vyibc-skill-publisher",
       "database_id": "45bf1a8f-f0e1-4947-b7af-f334c1223c13"
     }
+  ],
+  "routes": [
+    {
+      "pattern": "skill-publisher-mcp.vyibc.com",
+      "custom_domain": true
+    }
   ]
 }

@@ -5,7 +5,11 @@ It reuses the existing `upload-r2.vyibc.com` uploader and `skill.vyibc.com` arti
 host. It never calls Fleet, Hub or Harness. Directory admission is phase two,
 performed by an Agent through the separate `vyibc-hub` MCP.
 
-Endpoint: `https://vyibc-skill-publisher.2513120790.workers.dev/mcp`.
+Canonical endpoint: `https://skill-publisher-mcp.vyibc.com/mcp`.
+Direct client alias: `https://vyibc-skill-publisher.2513120790.workers.dev/mcp`.
+Use the Custom Domain for Hub admission: same-account Worker-to-Worker discovery
+through workers.dev returned404, while native clients could already connect.
+The Custom Domain fixes this without changing Fleet bindings or fetch behavior.
 
 Tools:
 
@@ -50,3 +54,22 @@ complete local source and refuses changes rather than overwriting it. Reverting
 service code and deleting published artifacts are separate operations: keep D1
 receipts and existing ZIPs for recovery. Client uninstall removes only the new
 publisher MCP connection and its `skill-publisher-cloud` Skill/plugin.
+
+Real creation → MCP-only admission → retained native installation: [acceptance](ACCEPTANCE.md).
+
+Connection template (obtain the dedicated owner credential from authenticated
+Hub “安装与配置”; never use the Fleet/Vault master credential):
+
+```json
+{"mcpServers":{"vyibc-skill-publisher":{"type":"http","url":"https://skill-publisher-mcp.vyibc.com/mcp","headers":{"Authorization":"Bearer <OWNER_TOKEN>"}}}}
+```
+
+The published cloud Skill can also be installed independently:
+
+```bash
+bash <(curl -fsSL https://skill.vyibc.com/install-skill-publisher-cloud.sh) codex
+```
+
+Skill installation and service authentication are separate. The complete suite
+can be obtained from the capability-square plugin entry linked in the acceptance
+record. No live credential is included in either public artifact.

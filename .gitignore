@@ -7,3 +7,5 @@ __pycache__/
 # Cloud MCP local dependencies and build output
 mcp/node_modules/
 mcp/dist/
+
+.wrangler/
