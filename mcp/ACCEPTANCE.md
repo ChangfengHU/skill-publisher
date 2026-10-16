@@ -47,3 +47,26 @@ Browser UI clicking is not part of these results; registry projection, downloads
 - mcp: [vyibc-skill-publisher](https://fleet.vyibc.com/#/hub?view=capabilities&type=mcp&q=vyibc-skill-publisher) — receipt `85307f23-756c-4a76-a049-0116f7ab9e10`.
 - skill: [skill-publisher-cloud](https://fleet.vyibc.com/#/hub?view=capabilities&type=skill&q=skill-publisher-cloud) — receipt `99614110-b124-481c-a370-c287457d1750`.
 - plugin: [vyibc-skill-publisher-suite](https://fleet.vyibc.com/#/hub?view=plugins&plugin=vyibc-skill-publisher-suite) — receipt `702b83f5-0677-4f70-b67a-415c155bc53e`.
+
+
+## 2026-10-16 Custom Domain outbound routing correction
+
+`global_fetch_strictly_public` is now declared in wrangler.json (main1d56044)
+and applied through the documented settings PATCH. Original script source SHA
+131d5eb992691a7941a2d6ef3c237a3bf6c635635d88ec25641d251073dff8b6
+and all three bindings/secrets are unchanged. Full settings readback preserved
+other settings. The first PATCH had the wrong multipart part name and was
+rejected400; the corrected request used `settings`. Intents were retained.
+
+A guide publication through the Custom Domain had failed before this correction;
+the failed request/version stays reserved. Read-only probes confirmed ZIP404
+and old installer bytes. The same guide was published as1.1.1 through workers.dev,
+with real native MCP calls and original ZIP hash verification. It was then admitted
+only through the independent Hub MCP. No failed job was manually marked published.
+
+After the correction, a tiny publisher-routing-check0.0.1 publication through
+the Custom Domain succeeded: actual native validate/publish/job read, original
+ZIP hash verification. It was never admitted to Hub. No model or media generation
+was invoked. Existing phase separation, durable failure and auth checks remain.
+Local publisher tests5/5 passed. This configuration fix does not add a new tool
+or mutate the previously frozen cloud-guide Skill1.0.0.
