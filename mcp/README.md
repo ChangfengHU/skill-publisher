@@ -9,7 +9,14 @@ Canonical endpoint: `https://skill-publisher-mcp.vyibc.com/mcp`.
 Direct client alias: `https://vyibc-skill-publisher.2513120790.workers.dev/mcp`.
 Use the Custom Domain for Hub admission: same-account Worker-to-Worker discovery
 through workers.dev returned404, while native clients could already connect.
-The Custom Domain fixes this without changing Fleet bindings or fetch behavior.
+The Custom Domain fixes discovery without changing Fleet bindings. The publisher
+also enables `global_fetch_strictly_public`: when invoked on the Custom Domain,
+uploads and artifact reads must route through the public uploader Worker rather
+than bypassing that same-zone route and reaching its origin. See
+https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public.
+A real failed custom-domain publication left its immutable request reserved;
+the unchanged guide was published successfully as version1.1.1 via workers.dev,
+without mutating the failed job or manually registering anything.
 
 Tools:
 

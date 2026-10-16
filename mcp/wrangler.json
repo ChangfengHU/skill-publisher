@@ -19,5 +19,8 @@
       "pattern": "skill-publisher-mcp.vyibc.com",
       "custom_domain": true
     }
+  ],
+  "compatibility_flags": [
+    "global_fetch_strictly_public"
   ]
 }
