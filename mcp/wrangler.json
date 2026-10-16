@@ -1,0 +1,17 @@
+{
+  "name": "vyibc-skill-publisher",
+  "main": "src/worker.mjs",
+  "account_id": "059feb047348e153b65f5efde638acf4",
+  "compatibility_date": "2026-08-03",
+  "workers_dev": true,
+  "observability": {
+    "enabled": false
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vyibc-skill-publisher",
+      "database_id": "45bf1a8f-f0e1-4947-b7af-f334c1223c13"
+    }
+  ]
+}

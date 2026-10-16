@@ -131,3 +131,13 @@ python3 skills/publish-skill/scripts/test-register-harness-release.py
 python3 skills/publish-skill/scripts/test-register-fleet-capability.py
 python3 skills/publish-skill/scripts/test-publish-install.py
 ```
+
+## 独立云端发布 MCP（创建与入驻分阶段）
+
+新增 `mcp/` 云端服务和 `skills/skill-publisher-cloud/` 使用指南：
+
+1. 发布 MCP 校验文件、上传完整 ZIP 与安装器、返回发布回执。它不自动登记任何目录。
+2. Agent 再通过独立的 Hub 入驻 MCP 登记服务、Skill 和组合插件。
+
+云端首版支持完整 UTF-8 文本 Skill；既有本地发布 CLI、二进制资产及原同步选项保持原样。
+详见 [服务说明](mcp/README.md)。凭据仅在服务配置与客户端私有连接中维护。

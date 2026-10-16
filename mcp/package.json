@@ -1,0 +1,1 @@
+{"name":"vyibc-skill-publisher-mcp","version":"1.0.0","private":true,"type":"module","scripts":{"test":"node --test test/*.test.mjs","build":"node build.mjs"},"dependencies":{"fflate":"0.8.3","yaml":"2.9.1"},"devDependencies":{"esbuild":"0.25.12"}}

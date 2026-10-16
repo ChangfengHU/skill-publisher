@@ -3,3 +3,7 @@
 
 __pycache__/
 *.pyc
+
+# Cloud MCP local dependencies and build output
+mcp/node_modules/
+mcp/dist/
